@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query'
-import { Copy, Check, Share2, Crown, Users, X, Trash2 } from 'lucide-react'
+import { Check, Copy, Crown, Share2, Users, X, Trash2 } from 'lucide-react'
 import { getGame, startGame, leaveGame, removePlayer, getCurrentUser, clearCurrentUser } from '@/lib/mock'
+import { GameLobbyOverviewCard } from '@/features/lobby/GameLobbyOverviewCard'
 import { CreateTeamsPanel } from '@/features/lobby/CreateTeamsPanel'
 import { PermissionsGate } from '@/features/lobby/PermissionsGate'
 import { LobbySelfTile } from '@/features/lobby/LobbySelfTile'
@@ -164,50 +165,40 @@ function GamePage() {
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <header className="z-40 shrink-0 border-b border-border bg-background/90 backdrop-blur-sm pt-safe px-4 pb-3">
-        <div className="flex items-start justify-between pt-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Lobby</p>
-            <h1 className="text-xl font-bold leading-tight">{game.name}</h1>
+        <div className="flex items-center justify-between gap-3 pt-3">
+          <p className="shrink-0 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            New Game Lobby
+          </p>
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-2.5">
+            <p className="min-w-0 truncate text-right text-[10px] font-medium uppercase leading-snug tracking-wide text-muted-foreground sm:text-xs">
+              <span className="text-muted-foreground/85">GAME ID:</span>{' '}
+              <span className="font-mono font-semibold tabular-nums text-foreground">{gameId}</span>
+            </p>
+            <div className="flex shrink-0 items-center gap-1">
+              <HeaderCopyGameIdButton gameId={gameId} />
+              <HeaderShareGameButton gameId={gameId} gameName={game.name} />
+            </div>
           </div>
-          {isOwner && (
-            <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-              <Crown className="h-4 w-4" />
-              Owner
-            </span>
-          )}
         </div>
       </header>
 
       {/* ── Scrollable content ───────────────────────────────────────────── */}
       <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain scroll-momentum px-4 py-6 space-y-6">
 
-        {/* Game code + share */}
-        <section className="rounded-2xl border border-border bg-secondary/40 p-5 space-y-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Invite players
-          </p>
-          <div className="flex items-center justify-between gap-4">
-            <span className="font-mono text-3xl font-bold tracking-widest">{gameId}</span>
-            <div className="flex gap-2">
-              <CopyButton gameId={gameId} />
-              <ShareButton gameId={gameId} gameName={game.name} />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Share the code or the link — anyone with it can join.
-          </p>
-        </section>
+        <GameLobbyOverviewCard
+          gameId={gameId}
+          game={game}
+          participants={participants}
+          teams={teams}
+          isOwner={isOwner}
+          actorId={currentUser!.id}
+        />
 
         {/* ── Participants / Teams ─────────────────────────────────────── */}
         {hasTeams ? (
           // Teams view
           <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Teams
-              </p>
-              <span className="text-xs text-muted-foreground">{participants.length} players</span>
-            </div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Teams</p>
             <TeamsView
               gameId={gameId}
               game={game}
@@ -221,12 +212,7 @@ function GamePage() {
         ) : (
           // Flat participants list (no teams yet)
           <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Players
-              </p>
-              <span className="text-xs text-muted-foreground">{participants.length} joined</span>
-            </div>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Players</p>
             <ul className="space-y-2">
               {participants.map(p => {
                 const isMe = p.id === currentUser?.id
@@ -408,9 +394,7 @@ function GamePage() {
   )
 }
 
-// ─── Copy + Share ─────────────────────────────────────────────────────────────
-
-function CopyButton({ gameId }: { gameId: string }) {
+function HeaderCopyGameIdButton({ gameId }: { gameId: string }) {
   const [copied, setCopied] = useState(false)
   async function handleCopy() {
     await navigator.clipboard.writeText(gameId)
@@ -419,33 +403,41 @@ function CopyButton({ gameId }: { gameId: string }) {
   }
   return (
     <button
+      type="button"
       onClick={handleCopy}
-      aria-label="Copy game code"
-      className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium active:opacity-60"
+      aria-label="Copy game ID"
+      className="tap-target-compact flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground active:bg-secondary/60 sm:h-9 sm:w-9"
     >
-      {copied ? <><Check className="h-4 w-4 text-green-500" />Copied</> : <><Copy className="h-4 w-4" />Copy</>}
+      {copied ? (
+        <Check className="h-4 w-4 text-green-600 dark:text-green-500" aria-hidden />
+      ) : (
+        <Copy className="h-4 w-4" aria-hidden />
+      )}
     </button>
   )
 }
 
-function ShareButton({ gameId, gameName }: { gameId: string; gameName: string }) {
-  // BACKEND DEV: joinUrl domain will change in production; path stays the same.
-  const joinUrl = `${window.location.origin}/join?id=${gameId}`
+function HeaderShareGameButton({ gameId, gameName }: { gameId: string; gameName: string }) {
   async function handleShare() {
+    const joinUrl = `${window.location.origin}/join?id=${gameId}`
     if (navigator.share) {
-      await navigator.share({ title: gameName, text: `Join my hunt! Code: ${gameId}`, url: joinUrl })
+      await navigator.share({
+        title: gameName,
+        text: `Join my hunt! Code: ${gameId}`,
+        url: joinUrl,
+      })
     } else {
       await navigator.clipboard.writeText(joinUrl)
     }
   }
   return (
     <button
+      type="button"
       onClick={handleShare}
       aria-label="Share join link"
-      className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground active:opacity-80"
+      className="tap-target-compact flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground active:bg-secondary/60 sm:h-9 sm:w-9"
     >
-      <Share2 className="h-4 w-4" />
-      Share
+      <Share2 className="h-4 w-4" aria-hidden />
     </button>
   )
 }

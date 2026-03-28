@@ -42,6 +42,14 @@ function smallestTeamId(gameId) {
     .sort((a, b) => a.count - b.count)[0].id
 }
 
+function normalizeGame(game) {
+  return {
+    ...game,
+    timeLimitMinutes: game.timeLimitMinutes ?? 120,
+    goalsRequired: game.goalsRequired ?? 15,
+  }
+}
+
 // ─── Games ────────────────────────────────────────────────────────────────────
 
 // BACKEND DEV: POST /api/games
@@ -55,7 +63,15 @@ app.post('/api/games', (req, res) => {
   }
 
   const gameId = generateGameCode()
-  const game = { id: gameId, name: name.trim(), status: 'LOBBY', ownerId, createdAt: new Date().toISOString() }
+  const game = {
+    id: gameId,
+    name: name.trim(),
+    status: 'LOBBY',
+    ownerId,
+    createdAt: new Date().toISOString(),
+    timeLimitMinutes: 120,
+    goalsRequired: 15,
+  }
   const participant = { id: ownerId, username: ownerUsername.trim(), gameId }
 
   store.games[gameId] = game
@@ -63,7 +79,7 @@ app.post('/api/games', (req, res) => {
   store.teams[gameId] = []
 
   console.log(`[game created] ${gameId} — "${game.name}" by ${ownerUsername}`)
-  res.json({ game, participant })
+  res.json({ game: normalizeGame(game), participant })
 })
 
 // BACKEND DEV: GET /api/games/:gameId
@@ -73,10 +89,47 @@ app.get('/api/games/:gameId', (req, res) => {
   if (!game) return res.status(404).json({ message: 'Game not found. Check the code and try again.' })
 
   res.json({
-    game,
+    game: normalizeGame(game),
     participants: store.participants[game.id] ?? [],
     teams:        store.teams[game.id]        ?? [],
   })
+})
+
+// BACKEND DEV: PATCH /api/games/:gameId
+// body:    { actorId, timeLimitMinutes?, goalsRequired? } — owner only, LOBBY only
+// returns: { game }
+app.patch('/api/games/:gameId', (req, res) => {
+  const { gameId } = req.params
+  const game = store.games[gameId]
+  if (!game) return res.status(404).json({ message: 'Game not found.' })
+
+  const { actorId, timeLimitMinutes, goalsRequired } = req.body ?? {}
+  if (!actorId || actorId !== game.ownerId) {
+    return res.status(403).json({ message: 'Only the game owner can change these settings.' })
+  }
+  if (game.status !== 'LOBBY') {
+    return res.status(409).json({ message: 'Settings are locked after the game starts.' })
+  }
+
+  if (timeLimitMinutes !== undefined) {
+    const n = Number(timeLimitMinutes)
+    if (!Number.isFinite(n) || n < 1 || n > 24 * 60) {
+      return res.status(400).json({ message: 'timeLimitMinutes must be between 1 and 1440 (24 hours).' })
+    }
+    game.timeLimitMinutes = Math.round(n)
+  }
+  if (goalsRequired !== undefined) {
+    const n = Number(goalsRequired)
+    if (!Number.isInteger(n) || n < 10 || n > 30) {
+      return res.status(400).json({ message: 'goalsRequired must be an integer from 10 to 30.' })
+    }
+    game.goalsRequired = n
+  }
+  if (timeLimitMinutes === undefined && goalsRequired === undefined) {
+    return res.status(400).json({ message: 'Provide timeLimitMinutes and/or goalsRequired.' })
+  }
+
+  res.json({ game: normalizeGame(game) })
 })
 
 // BACKEND DEV: POST /api/games/:gameId/join
@@ -96,7 +149,7 @@ app.post('/api/games/:gameId/join', (req, res) => {
   store.participants[gameId] = [...(store.participants[gameId] ?? []), participant]
 
   console.log(`[player joined] ${gameId} — ${username}${teamId ? ` → team ${teamId}` : ''}`)
-  res.json({ game, participant })
+  res.json({ game: normalizeGame(game), participant })
 })
 
 // BACKEND DEV: PATCH /api/games/:gameId/start
@@ -107,7 +160,7 @@ app.patch('/api/games/:gameId/start', (req, res) => {
   if (!game) return res.status(404).json({ message: 'Game not found.' })
   game.status = 'ACTIVE'
   console.log(`[game started] ${req.params.gameId}`)
-  res.json({ game })
+  res.json({ game: normalizeGame(game) })
 })
 
 // ─── Teams ────────────────────────────────────────────────────────────────────

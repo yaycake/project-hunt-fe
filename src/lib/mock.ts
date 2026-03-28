@@ -44,6 +44,10 @@ export interface MockGame {
   status: 'LOBBY' | 'ACTIVE' | 'COMPLETE' | 'EXPIRED'
   ownerId: string
   createdAt: string
+  /** Minutes; default 120 (2h); lobby configurable up to 1440 (24h). */
+  timeLimitMinutes: number
+  /** Number of goals for this game (e.g. to win). */
+  goalsRequired: number
 }
 
 export interface MockTeam {
@@ -194,6 +198,22 @@ export async function getGame(
  */
 export async function startGame(gameId: string): Promise<{ game: MockGame }> {
   return api(`/api/games/${gameId}/start`, { method: 'PATCH' })
+}
+
+/**
+ * BACKEND DEV:
+ *   PATCH /api/games/:gameId
+ *   body:    { actorId, timeLimitMinutes?, goalsRequired? } — owner only, LOBBY only
+ *   returns: { game }
+ */
+export async function updateGameSettings(
+  gameId: string,
+  payload: { actorId: string; timeLimitMinutes?: number; goalsRequired?: number },
+): Promise<{ game: MockGame }> {
+  return api(`/api/games/${gameId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
 }
 
 // ─── Team API ─────────────────────────────────────────────────────────────────
