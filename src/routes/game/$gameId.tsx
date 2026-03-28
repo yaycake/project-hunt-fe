@@ -7,7 +7,12 @@ import { GameLobbyOverviewCard, InvitePlayersSheet } from '@/features/lobby/Game
 import { CreateTeamsPanel } from '@/features/lobby/CreateTeamsPanel'
 import { PermissionsGate } from '@/features/lobby/PermissionsGate'
 import { LobbySelfTile } from '@/features/lobby/LobbySelfTile'
+import {
+  LobbyParticipantRow,
+  ParticipantRemoveConfirmBar,
+} from '@/features/lobby/LobbyParticipantRow'
 import { ParticipantPermissionStatus } from '@/features/lobby/ParticipantPermissionStatus'
+import { BottomSheet } from '@/components/ui/BottomSheet'
 import { TeamsView } from '@/features/lobby/TeamsView'
 import { markPermissionsGateShown, isPermissionsGateMarkedShown } from '@/features/lobby/permissionsGateStorage'
 export const Route = createFileRoute('/game/$gameId')({
@@ -152,7 +157,7 @@ function GamePage() {
 
       {/* ── Reassignment banner ───────────────────────────────────────────── */}
       {reassignBanner && (
-        <div className="fixed top-0 inset-x-0 z-50 px-4 pt-safe">
+        <div className="fixed top-0 inset-x-0 z-reassign-banner px-4 pt-safe">
           <div className="mt-3 flex items-start gap-3 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground shadow-lg">
             <span className="flex-1">{reassignBanner}</span>
             <button onClick={() => setReassignBanner(null)} className="mt-0.5 shrink-0">
@@ -163,7 +168,7 @@ function GamePage() {
       )}
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
-      <header className="z-40 shrink-0 border-b border-border bg-background/90 backdrop-blur-sm pt-safe px-4 pb-3">
+      <header className="z-sticky-chrome shrink-0 border-b border-border bg-background/90 backdrop-blur-sm pt-safe px-4 pb-3">
         <div className="flex items-center justify-between gap-3 pt-3">
           <p className="shrink-0 text-sm font-semibold tracking-tight text-foreground">New Game</p>
           <div className="flex min-w-0 max-w-[min(100%,28rem)] flex-1 justify-end">
@@ -249,18 +254,21 @@ function GamePage() {
                         />
                       </div>
                     ) : (
-                      <>
-                        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3">
+                      <LobbyParticipantRow
+                        avatar={
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                             {p.username.charAt(0).toUpperCase()}
                           </div>
-                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        }
+                        middle={
+                          <>
                             <span className="min-w-0 truncate text-sm font-medium">{p.username}</span>
                             {isGameOwner && (
                               <Crown className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />
                             )}
                             {canRemove && (
                               <button
+                                type="button"
                                 onClick={() => setConfirmRemoveId(isConfirming ? null : p.id)}
                                 aria-label="Remove player"
                                 className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/50 active:opacity-60 sm:h-8 sm:w-8"
@@ -268,33 +276,18 @@ function GamePage() {
                                 <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                               </button>
                             )}
-                          </div>
-                          <ParticipantPermissionStatus participant={p} className="shrink-0" />
-                        </div>
-                      </>
+                          </>
+                        }
+                        badges={<ParticipantPermissionStatus participant={p} className="shrink-0" />}
+                      />
                     )}
 
-                    {/* Inline confirm */}
                     {isConfirming && (
-                      <div className="flex items-center justify-between gap-2 border-t border-border bg-background px-4 py-2.5">
-                        <p className="text-xs text-muted-foreground">
-                          Remove <span className="font-semibold text-foreground">{p.username}</span>?
-                        </p>
-                        <div className="flex gap-2 shrink-0">
-                          <button
-                            onClick={() => doRemovePlayer(p.id)}
-                            className="rounded-lg bg-destructive px-3 py-1 text-xs font-semibold text-destructive-foreground"
-                          >
-                            Remove
-                          </button>
-                          <button
-                            onClick={() => setConfirmRemoveId(null)}
-                            className="rounded-lg border border-border px-3 py-1 text-xs font-semibold"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
+                      <ParticipantRemoveConfirmBar
+                        displayName={p.username}
+                        onConfirm={() => doRemovePlayer(p.id)}
+                        onCancel={() => setConfirmRemoveId(null)}
+                      />
                     )}
                   </li>
                 )
@@ -354,21 +347,12 @@ function GamePage() {
 
       {/* ── Create Teams overlay ──────────────────────────────────────────── */}
       {isOwner && showCreateTeams && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowCreateTeams(false) }}
-        >
-          <div className="w-full max-h-[90dvh] overflow-y-auto scroll-momentum rounded-t-3xl bg-background shadow-2xl">
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
-            </div>
-            <CreateTeamsPanel
-              gameId={gameId}
-              onClose={() => setShowCreateTeams(false)}
-            />
-          </div>
-        </div>
+        <BottomSheet onClose={() => setShowCreateTeams(false)}>
+          <CreateTeamsPanel
+            gameId={gameId}
+            onClose={() => setShowCreateTeams(false)}
+          />
+        </BottomSheet>
       )}
 
       {inviteSheetOpen && (
@@ -408,11 +392,7 @@ function HeaderCopyGameIdButton({
     >
       {copied ? (
         <Check
-          className={
-            inSecondaryPill
-              ? 'h-4 w-4 text-emerald-600 dark:text-emerald-400'
-              : 'h-4 w-4 text-green-600 dark:text-green-500'
-          }
+          className="h-4 w-4 text-success"
           aria-hidden
         />
       ) : (

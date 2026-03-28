@@ -26,6 +26,8 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
 }
 
 /*
@@ -55,6 +57,9 @@
     --input: 240 5.9% 90%;
     --ring: 221 83% 46%;
     --radius: 0.5rem;
+    /* Positive / granted states (permissions, copy confirmation) */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
   }
 
   .dark {
@@ -77,6 +82,8 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 212 95% 54%;
+    --success: 142 69% 58%;
+    --success-foreground: 0 0% 98%;
   }
 }
 
@@ -222,5 +229,48 @@
   .no-select {
     -webkit-user-select: none;
     user-select: none;
+  }
+
+  /*
+    Stacking map (low → high). Adjust here for global redesigns; avoid ad-hoc z-[…] in components.
+
+    40  Sticky chrome (AppShell header/footer, game page header)
+    50  Transient banners; default bottom sheets (create teams)
+    90  Teams “Add team” sheet (stays under lobby-level UI)
+    100 Lobby / invite sheets
+    110 Permission sheet; team-reassign scrim (same plane — drag ghost wins)
+    112 Team-reassign hint bar
+    118 Team row elevated while a card is being dragged
+    125 Team-reassign floating ghost card
+  */
+  .z-sticky-chrome {
+    z-index: 40;
+  }
+  .z-reassign-banner {
+    z-index: 50;
+  }
+  .z-sheet-default {
+    z-index: 50;
+  }
+  .z-sheet-teams {
+    z-index: 90;
+  }
+  .z-sheet-lobby {
+    z-index: 100;
+  }
+  .z-sheet-permission {
+    z-index: 110;
+  }
+  .z-drag-scrim {
+    z-index: 110;
+  }
+  .z-drag-hint {
+    z-index: 112;
+  }
+  .z-team-row-elevate {
+    z-index: 118;
+  }
+  .z-drag-ghost {
+    z-index: 125;
   }
 }

@@ -1,17 +1,28 @@
-import { useState } from 'react'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { ChevronLeft } from 'lucide-react'
+import { z } from 'zod'
 import { createGame } from '@/lib/mock'
 
+const createSearchSchema = z.object({
+  username: z.string().optional(),
+})
+
 export const Route = createFileRoute('/create')({
+  validateSearch: createSearchSchema,
   component: CreateGamePage,
 })
 
 function CreateGamePage() {
   const navigate = useNavigate()
+  const { username: usernameFromSearch } = useSearch({ from: '/create' })
   const [gameName, setGameName] = useState('')
-  const [username, setUsername] = useState('')
+  const [username, setUsername] = useState(usernameFromSearch ?? '')
+
+  useEffect(() => {
+    if (usernameFromSearch) setUsername(usernameFromSearch)
+  }, [usernameFromSearch])
   const [errors, setErrors] = useState<{ gameName?: string; username?: string }>({})
 
   const { mutate, isPending, error } = useMutation({

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Crown, Ellipsis, Layers, Plus, Share2, User, UserPlus, X } from 'lucide-react'
+import { Crown, Ellipsis, Layers, Plus, Share2, User, UserPlus } from 'lucide-react'
 import {
   updateGameSettings,
   type MockGame,
@@ -10,6 +10,9 @@ import {
 import { AddTeamPanel } from '@/features/lobby/AddTeamPanel'
 import { CircularHourDial } from '@/features/lobby/CircularHourDial'
 import { clampGoals, GoalsSlider } from '@/features/lobby/GoalsSlider'
+import { BottomSheet } from '@/components/ui/BottomSheet'
+import { BottomSheetFormChrome } from '@/components/ui/BottomSheetFormChrome'
+import { contrastTextClass } from '@/features/lobby/teamColorUtils'
 import { cn } from '@/lib/utils'
 
 const MAX_DIAL_HOURS = 12
@@ -24,17 +27,6 @@ function formatTimeLimitMinutes(m: number): string {
   const min = m % 60
   if (min === 0) return `${h} hour${h === 1 ? '' : 's'}`
   return `${h}h ${min}m`
-}
-
-/** Readable label on team-colored pills. */
-function contrastTextClass(bgHex: string): string {
-  const h = bgHex.replace('#', '').trim()
-  if (h.length !== 6 || !/^[0-9a-fA-F]+$/.test(h)) return 'text-white'
-  const r = Number.parseInt(h.slice(0, 2), 16)
-  const g = Number.parseInt(h.slice(2, 4), 16)
-  const b = Number.parseInt(h.slice(4, 6), 16)
-  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-  return luminance > 0.62 ? 'text-zinc-900' : 'text-white'
 }
 
 const neutralBadge =
@@ -335,25 +327,18 @@ export function GameLobbyOverviewCard({
       )}
 
       {isOwner && showAddTeam && (
-        <div
-          className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/50 backdrop-blur-sm"
-          onClick={e => {
-            if (e.target === e.currentTarget) setShowAddTeam(false)
-          }}
-          role="presentation"
+        <BottomSheet
+          zClassName="z-sheet-lobby"
+          panelClassName="pb-safe"
+          onClose={() => setShowAddTeam(false)}
         >
-          <div className="w-full max-h-[90dvh] overflow-y-auto scroll-momentum rounded-t-3xl bg-background pb-safe shadow-2xl">
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
-            </div>
-            <AddTeamPanel
-              gameId={gameId}
-              existingTeams={teams}
-              actorId={actorId}
-              onClose={() => setShowAddTeam(false)}
-            />
-          </div>
-        </div>
+          <AddTeamPanel
+            gameId={gameId}
+            existingTeams={teams}
+            actorId={actorId}
+            onClose={() => setShowAddTeam(false)}
+          />
+        </BottomSheet>
       )}
     </section>
   )
@@ -401,25 +386,14 @@ export function InvitePlayersSheet({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className="max-h-[min(85dvh,480px)] w-full overflow-y-auto scroll-momentum rounded-t-3xl bg-background px-5 pt-3 pb-safe shadow-2xl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
-        <div className="relative pb-1">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground active:bg-secondary/60"
-          >
-            <X className="h-4 w-4" />
-          </button>
+    <BottomSheetFormChrome
+      onClose={onClose}
+      zClassName="z-sheet-lobby"
+      panelClassName="max-h-[min(85dvh,480px)] px-5 pt-3 pb-safe"
+      headerPadding="pb-1"
+      doneTopSpacing="mt-4"
+      top={
+        <>
           <h2 className="pr-10 text-center text-lg font-semibold leading-tight">Invite players</h2>
           <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
             <p>
@@ -432,32 +406,27 @@ export function InvitePlayersSheet({
               the home screen.
             </p>
           </div>
-        </div>
+        </>
+      }
+      between={
+        <>
+          <button
+            type="button"
+            onClick={handleNativeShare}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-base font-semibold text-primary-foreground shadow-sm active:opacity-90"
+          >
+            <Share2 className="h-5 w-5 shrink-0" aria-hidden />
+            Share invite
+          </button>
 
-        <button
-          type="button"
-          onClick={handleNativeShare}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-base font-semibold text-primary-foreground shadow-sm active:opacity-90"
-        >
-          <Share2 className="h-5 w-5 shrink-0" aria-hidden />
-          Share invite
-        </button>
-
-        {shareState === 'copied' && (
-          <p className="mt-2 text-center text-xs text-muted-foreground">Message copied to clipboard.</p>
-        )}
-        {shareState === 'error' && (
-          <p className="mt-2 text-center text-xs text-destructive">Couldn&apos;t share. Try again.</p>
-        )}
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="mb-1 mt-4 w-full rounded-xl border border-border py-3 text-sm font-medium active:bg-secondary/40"
-        >
-          Done
-        </button>
-      </div>
-    </div>
+          {shareState === 'copied' && (
+            <p className="mt-2 text-center text-xs text-muted-foreground">Message copied to clipboard.</p>
+          )}
+          {shareState === 'error' && (
+            <p className="mt-2 text-center text-xs text-destructive">Couldn&apos;t share. Try again.</p>
+          )}
+        </>
+      }
+    />
   )
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
 const VIEW = 100
@@ -238,14 +238,14 @@ export function CircularHourDial({
               cy={CY}
               r={R_MID}
               fill="none"
-              className={cn(trackBase, 'stroke-blue-500 dark:stroke-blue-400')}
+              className={cn(trackBase, 'stroke-primary')}
               strokeWidth={STROKE}
             />
           ) : (
             selectedPathD && (
               <path
                 d={selectedPathD}
-                className={cn(trackBase, 'stroke-blue-500 dark:stroke-blue-400')}
+                className={cn(trackBase, 'stroke-primary')}
                 strokeWidth={STROKE}
               />
             )
