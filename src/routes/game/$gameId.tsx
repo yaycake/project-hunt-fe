@@ -10,8 +10,6 @@ import { LobbySelfTile } from '@/features/lobby/LobbySelfTile'
 import { ParticipantPermissionStatus } from '@/features/lobby/ParticipantPermissionStatus'
 import { TeamsView } from '@/features/lobby/TeamsView'
 import { markPermissionsGateShown, isPermissionsGateMarkedShown } from '@/features/lobby/permissionsGateStorage'
-import { cn } from '@/lib/utils'
-
 export const Route = createFileRoute('/game/$gameId')({
   component: GamePage,
 })
@@ -166,17 +164,17 @@ function GamePage() {
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <header className="z-40 shrink-0 border-b border-border bg-background/90 backdrop-blur-sm pt-safe px-4 pb-3">
         <div className="flex items-center justify-between gap-3 pt-3">
-          <p className="shrink-0 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            New Game Lobby
-          </p>
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-2.5">
-            <p className="min-w-0 truncate text-right text-[10px] font-medium uppercase leading-snug tracking-wide text-muted-foreground sm:text-xs">
-              <span className="text-muted-foreground/85">GAME ID:</span>{' '}
-              <span className="font-mono font-semibold tabular-nums text-foreground">{gameId}</span>
-            </p>
-            <div className="flex shrink-0 items-center gap-1">
-              <HeaderCopyGameIdButton gameId={gameId} />
-              <HeaderShareGameButton gameId={gameId} gameName={game.name} />
+          <p className="shrink-0 text-sm font-semibold tracking-tight text-foreground">New Game</p>
+          <div className="flex min-w-0 max-w-[min(100%,28rem)] flex-1 justify-end">
+            <div className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-full bg-secondary px-2.5 py-0.5 pl-3 text-secondary-foreground shadow-sm sm:gap-2.5 sm:px-3">
+              <p className="min-w-0 truncate text-left text-[10px] font-medium uppercase leading-snug tracking-wide text-secondary-foreground/90 sm:text-xs">
+                <span className="text-secondary-foreground/75">Game ID</span>{' '}
+                <span className="font-mono font-semibold tabular-nums text-secondary-foreground">{gameId}</span>
+              </p>
+              <div className="flex shrink-0 items-center gap-0.5 border-l border-secondary-foreground/20 pl-2">
+                <HeaderCopyGameIdButton gameId={gameId} inSecondaryPill />
+                <HeaderShareGameButton gameId={gameId} gameName={game.name} inSecondaryPill />
+              </div>
             </div>
           </div>
         </div>
@@ -192,6 +190,15 @@ function GamePage() {
           teams={teams}
           isOwner={isOwner}
           actorId={currentUser!.id}
+          startGame={
+            isOwner && game.status === 'LOBBY'
+              ? {
+                  canStart: canStart,
+                  isStarting: isStarting,
+                  onStart: () => handleStart(),
+                }
+              : undefined
+          }
         />
 
         {/* ── Participants / Teams ─────────────────────────────────────── */}
@@ -224,27 +231,16 @@ function GamePage() {
                 return (
                   <li
                     key={p.id}
-                    className={cn(
-                      'overflow-hidden rounded-xl border bg-secondary/30',
-                      isMe
-                        ? teamForP
-                          ? 'border-2'
-                          : 'border-2 border-primary ring-1 ring-primary/25'
-                        : 'border-border',
-                    )}
-                    style={
-                      isMe && teamForP
-                        ? {
-                            borderColor: teamForP.color,
-                            boxShadow: `0 0 0 1px color-mix(in srgb, ${teamForP.color} 25%, transparent)`,
-                          }
-                        : undefined
-                    }
+                    className="overflow-hidden rounded-xl border border-border bg-secondary/30"
                   >
                     {/* Player row */}
                     {isMe ? (
                       <div className="px-4 py-3">
-                        <LobbySelfTile gameId={gameId} participant={p} />
+                        <LobbySelfTile
+                          gameId={gameId}
+                          participant={p}
+                          teamColor={teamForP?.color}
+                        />
                       </div>
                     ) : (
                       <>
@@ -350,28 +346,6 @@ function GamePage() {
         )}
       </main>
 
-      {/* ── Footer: Start Game (owner only) ──────────────────────────────── */}
-      {isOwner && (
-        <footer className="z-40 shrink-0 border-t border-border bg-background/90 backdrop-blur-sm px-4 pt-3 pb-safe">
-          <button
-            onClick={() => handleStart()}
-            disabled={!canStart || isStarting}
-            className={cn(
-              'w-full rounded-xl px-4 py-4 text-base font-semibold transition active:opacity-80',
-              canStart
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-muted-foreground cursor-not-allowed',
-            )}
-          >
-            {isStarting
-              ? 'Starting…'
-              : canStart
-                ? 'Start Game'
-                : `Need ${2 - participants.length} more player${2 - participants.length === 1 ? '' : 's'}`}
-          </button>
-        </footer>
-      )}
-
       {/* ── Create Teams overlay ──────────────────────────────────────────── */}
       {isOwner && showCreateTeams && (
         <div
@@ -394,7 +368,13 @@ function GamePage() {
   )
 }
 
-function HeaderCopyGameIdButton({ gameId }: { gameId: string }) {
+function HeaderCopyGameIdButton({
+  gameId,
+  inSecondaryPill,
+}: {
+  gameId: string
+  inSecondaryPill?: boolean
+}) {
   const [copied, setCopied] = useState(false)
   async function handleCopy() {
     await navigator.clipboard.writeText(gameId)
@@ -406,10 +386,21 @@ function HeaderCopyGameIdButton({ gameId }: { gameId: string }) {
       type="button"
       onClick={handleCopy}
       aria-label="Copy game ID"
-      className="tap-target-compact flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground active:bg-secondary/60 sm:h-9 sm:w-9"
+      className={
+        inSecondaryPill
+          ? 'tap-target-compact flex h-8 w-8 items-center justify-center rounded-md text-secondary-foreground transition hover:bg-secondary-foreground/10 active:bg-secondary-foreground/18 sm:h-9 sm:w-9'
+          : 'tap-target-compact flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground active:bg-secondary/60 sm:h-9 sm:w-9'
+      }
     >
       {copied ? (
-        <Check className="h-4 w-4 text-green-600 dark:text-green-500" aria-hidden />
+        <Check
+          className={
+            inSecondaryPill
+              ? 'h-4 w-4 text-emerald-600 dark:text-emerald-400'
+              : 'h-4 w-4 text-green-600 dark:text-green-500'
+          }
+          aria-hidden
+        />
       ) : (
         <Copy className="h-4 w-4" aria-hidden />
       )}
@@ -417,7 +408,15 @@ function HeaderCopyGameIdButton({ gameId }: { gameId: string }) {
   )
 }
 
-function HeaderShareGameButton({ gameId, gameName }: { gameId: string; gameName: string }) {
+function HeaderShareGameButton({
+  gameId,
+  gameName,
+  inSecondaryPill,
+}: {
+  gameId: string
+  gameName: string
+  inSecondaryPill?: boolean
+}) {
   async function handleShare() {
     const joinUrl = `${window.location.origin}/join?id=${gameId}`
     if (navigator.share) {
@@ -435,7 +434,11 @@ function HeaderShareGameButton({ gameId, gameName }: { gameId: string; gameName:
       type="button"
       onClick={handleShare}
       aria-label="Share join link"
-      className="tap-target-compact flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground active:bg-secondary/60 sm:h-9 sm:w-9"
+      className={
+        inSecondaryPill
+          ? 'tap-target-compact flex h-8 w-8 items-center justify-center rounded-md text-secondary-foreground transition hover:bg-secondary-foreground/10 active:bg-secondary-foreground/18 sm:h-9 sm:w-9'
+          : 'tap-target-compact flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground active:bg-secondary/60 sm:h-9 sm:w-9'
+      }
     >
       <Share2 className="h-4 w-4" aria-hidden />
     </button>

@@ -260,8 +260,8 @@ export function CircularHourDial({
 
         <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-1">
           <div className="flex items-baseline justify-center gap-1">
-            <span className="text-3xl font-bold tabular-nums leading-none text-primary sm:text-4xl">{clamped}</span>
-            <span className="text-base font-semibold leading-none text-primary sm:text-lg">
+            <span className="text-3xl font-bold tabular-nums leading-none text-foreground sm:text-4xl">{clamped}</span>
+            <span className="text-base font-semibold leading-none text-foreground sm:text-lg">
               {clamped === 1 ? 'hour' : 'hours'}
             </span>
           </div>

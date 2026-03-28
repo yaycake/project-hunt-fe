@@ -42,7 +42,7 @@ export function GoalsSlider({ value, onValueChange, disabled, className }: Props
         <Minus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
       </button>
       <span
-        className="min-w-[2.5ch] text-center text-3xl font-bold tabular-nums text-primary sm:text-4xl"
+        className="min-w-[2.5ch] text-center text-3xl font-bold tabular-nums text-foreground sm:text-4xl"
         aria-live="polite"
       >
         {v}

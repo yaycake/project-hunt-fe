@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Bell, BellOff, MapPin, MapPinOff, X } from 'lucide-react'
 import type { MockParticipant } from '@/lib/mock'
+import { resolveParticipantPermissionBuckets } from '@/features/lobby/participantPermissionModel'
 import type { LocationPermissionUi, NotificationPermissionUi } from '@/features/lobby/useLobbyPermissions'
 import { cn } from '@/lib/utils'
 
@@ -25,24 +26,6 @@ interface Props {
   selfPermissionControls?: SelfPermissionControls
 }
 
-function storedLocationBucket(
-  p: MockParticipant['locationPermission'],
-): 'granted' | 'denied' | 'unavailable' | 'pending' {
-  if (p === 'granted') return 'granted'
-  if (p === 'unavailable') return 'unavailable'
-  if (p === 'denied') return 'denied'
-  return 'pending'
-}
-
-function storedNotificationBucket(
-  p: MockParticipant['notificationPermission'],
-): 'granted' | 'denied' | 'unsupported' | 'pending' {
-  if (p === 'granted') return 'granted'
-  if (p === 'denied') return 'denied'
-  if (p === 'unsupported') return 'unsupported'
-  return 'pending'
-}
-
 /**
  * Public lobby readout of self-reported browser permissions (stored on the game).
  * Tapping the badge group opens one sheet with location + notification status; Enable CTAs on your own row.
@@ -51,22 +34,17 @@ export function ParticipantPermissionStatus({ participant, className, selfPermis
   const self = selfPermissionControls
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  const locBucket: LocationPermissionUi | 'granted' | 'denied' | 'unavailable' | 'pending' = self
-    ? self.locationState
-    : storedLocationBucket(participant.locationPermission)
-
-  const notifBucket: NotificationPermissionUi | 'granted' | 'denied' | 'unsupported' | 'pending' = self
-    ? self.notificationState
-    : storedNotificationBucket(participant.notificationPermission)
-
-  const locShared = locBucket === 'granted'
-  const locUnavailable = locBucket === 'unavailable'
-
-  const notifAllowed = notifBucket === 'granted'
-  const notifUnsupported = notifBucket === 'unsupported'
-
-  const showLocationCta = !!self && locBucket !== 'granted' && locBucket !== 'unavailable'
-  const showNotificationCta = !!self && notifBucket !== 'granted' && notifBucket !== 'unsupported'
+  const {
+    locShared,
+    locUnavailable,
+    notifAllowed,
+    notifUnsupported,
+    showLocationSheetCta,
+    showNotificationSheetCta,
+  } = resolveParticipantPermissionBuckets(
+    participant,
+    self ? { locationState: self.locationState, notificationState: self.notificationState } : undefined,
+  )
 
   return (
     <>
@@ -144,7 +122,7 @@ export function ParticipantPermissionStatus({ participant, className, selfPermis
                       </>
                     )}
                   </p>
-                  {showLocationCta && self && (
+                  {showLocationSheetCta && self && (
                     <button
                       type="button"
                       disabled={self.locLoading}
@@ -200,7 +178,7 @@ export function ParticipantPermissionStatus({ participant, className, selfPermis
                         </>
                       )}
                     </p>
-                    {showNotificationCta && self && (
+                    {showNotificationSheetCta && self && (
                       <button
                         type="button"
                         disabled={self.notifLoading}

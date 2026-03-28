@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, Crown, Layers, Plus, Share2, User, UserPlus, X } from 'lucide-react'
+import { Check, Copy, Crown, Ellipsis, Layers, Plus, Share2, User, UserPlus, X } from 'lucide-react'
 import {
   updateGameSettings,
   type MockGame,
@@ -53,6 +53,59 @@ const settingsTileTitle =
 const settingsTileBodyCenter =
   'flex min-h-0 w-full flex-1 flex-col items-center justify-center'
 
+interface StartGameCta {
+  canStart: boolean
+  isStarting: boolean
+  onStart: () => void
+}
+
+const PREGAME_PHRASES = ['Waiting for team members', 'Configuring the game'] as const
+const PREGAME_ROTATE_MS = 5000
+const PREGAME_FADE_MS = 1500
+
+/** Non-owner: ellipsis + two phrases that crossfade in the lobby card footer. */
+function LobbyPregameStatus() {
+  const [phraseIndex, setPhraseIndex] = useState(0)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const id = window.setInterval(() => {
+      setPhraseIndex(i => (i + 1) % PREGAME_PHRASES.length)
+    }, PREGAME_ROTATE_MS)
+    return () => window.clearInterval(id)
+  }, [])
+
+  return (
+    <div
+      className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-border/50 bg-muted/25 px-4 py-3.5 dark:bg-zinc-900/40"
+      role="status"
+      aria-live="polite"
+      aria-label={PREGAME_PHRASES[phraseIndex]}
+    >
+      <Ellipsis
+        className="h-6 w-6 shrink-0 text-primary opacity-90"
+        strokeWidth={2.25}
+        aria-hidden
+      />
+      <div className="relative min-h-[1.375rem] min-w-0 flex-1">
+        {PREGAME_PHRASES.map((phrase, idx) => (
+          <span
+            key={phrase}
+            className={cn(
+              'absolute inset-0 text-left text-sm leading-snug text-muted-foreground transition-opacity ease-in-out',
+              idx === phraseIndex ? 'opacity-100' : 'pointer-events-none opacity-0',
+            )}
+            style={{ transitionDuration: `${PREGAME_FADE_MS}ms` }}
+          >
+            {phrase}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 interface Props {
   gameId: string
   game: MockGame
@@ -60,6 +113,8 @@ interface Props {
   teams: MockTeam[]
   isOwner: boolean
   actorId: string
+  /** Owner-only: primary CTA at the bottom of this card (not docked to viewport). */
+  startGame?: StartGameCta
 }
 
 export function GameLobbyOverviewCard({
@@ -69,6 +124,7 @@ export function GameLobbyOverviewCard({
   teams,
   isOwner,
   actorId,
+  startGame,
 }: Props) {
   const queryClient = useQueryClient()
   const owner = participants.find(p => p.id === game.ownerId)
@@ -239,12 +295,41 @@ export function GameLobbyOverviewCard({
           <div className={settingsTile}>
             <p className={settingsTileTitle}>Goals</p>
             <div className={settingsTileBodyCenter}>
-              <p className="text-center text-3xl font-bold tabular-nums text-primary">
+              <p className="text-center text-3xl font-bold tabular-nums text-foreground">
                 {clampGoals(game.goalsRequired)}
               </p>
             </div>
           </div>
         </div>
+      )}
+
+      {startGame ? (
+        <div className="mt-5 border-t border-border/60 pt-4">
+          <button
+            type="button"
+            onClick={startGame.onStart}
+            disabled={!startGame.canStart || startGame.isStarting}
+            className={cn(
+              'w-full min-w-0 rounded-xl border-0 bg-primary px-4 py-3.5 text-base font-semibold text-primary-foreground shadow-sm transition',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              'enabled:hover:bg-primary/90 enabled:active:opacity-90',
+              'disabled:cursor-not-allowed disabled:opacity-65',
+            )}
+          >
+            {startGame.isStarting
+              ? 'Starting…'
+              : startGame.canStart
+                ? 'Start Game'
+                : `Need ${2 - participants.length} more player${2 - participants.length === 1 ? '' : 's'}`}
+          </button>
+        </div>
+      ) : (
+        game.status === 'LOBBY' &&
+        !isOwner && (
+          <div className="mt-5 border-t border-border/60 pt-4">
+            <LobbyPregameStatus />
+          </div>
+        )
       )}
 
       {inviteOpen && (

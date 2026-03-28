@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!--
+      viewport-fit=cover: lets the app extend under the notch and home indicator.
+      Safe-area CSS variables compensate so content stays visible.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- PWA — Android / Chrome -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#09090b" />
+
+    <!-- PWA — iOS / Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Hunt" />
+    <!--
+      black-translucent: status bar overlays the app (more immersive).
+      Requires pt-safe on any sticky header so content isn't hidden behind it.
+    -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!--
+      Prevent iOS from auto-linking phone numbers, dates, etc. inside the UI.
+      Without this, strings like "3:00" or "42" can become tappable blue links.
+    -->
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+
+    <meta name="description" content="Gamified scavenger hunt — race your team to complete goals" />
+    <title>Project Hunt</title>
+    <script type="module" crossorigin src="/assets/index-Coq-6MEA.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C2v2SVYs.css">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

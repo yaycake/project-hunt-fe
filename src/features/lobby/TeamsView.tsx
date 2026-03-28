@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowRightLeft, ChevronsDown, ChevronsUp, Crown, Pencil, Plus, Trash2, Check, X } from 'lucide-react'
+import { ChevronsDown, ChevronsUp, Crown, Pencil, Plus, Trash2, Check, X } from 'lucide-react'
 import {
   switchTeam,
   updateTeam,
@@ -15,6 +15,8 @@ import {
 import { AddTeamPanel } from '@/features/lobby/AddTeamPanel'
 import { LobbySelfTile } from '@/features/lobby/LobbySelfTile'
 import { ParticipantPermissionStatus } from '@/features/lobby/ParticipantPermissionStatus'
+import { TeamReassignGrip, useTeamReassignDrag } from '@/features/lobby/TeamReassignDrag'
+import { invalidateGameQueriesWithViewTransition } from '@/lib/viewTransition'
 import { cn } from '@/lib/utils'
 
 /** Label color on filled team swatches — dark text on light fills (e.g. yellow), white on saturated. */
@@ -49,8 +51,8 @@ export function TeamsView({
   const [editingName,   setEditingName]            = useState('')
   const [confirmDeleteId, setConfirmDeleteId]      = useState<string | null>(null)
 
-  /** Owner: move player to another team — bottom sheet lists destination teams */
-  const [moveSheetParticipantId, setMoveSheetParticipantId] = useState<string | null>(null)
+  /** Brief highlight on the team card that received a player via drag-assign */
+  const [flashTeamId, setFlashTeamId] = useState<string | null>(null)
 
   /** Non-mine team cards: expanded when true; yours is always expanded. */
   const [expandedOtherTeams, setExpandedOtherTeams] = useState<Record<string, boolean>>({})
@@ -77,11 +79,6 @@ export function TeamsView({
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
-  const { mutate: doSwitchTeam, isPending: isSwitching } = useMutation({
-    mutationFn: (teamId: string) => switchTeam(gameId, currentUser.id, teamId),
-    onSuccess: () => { onSelfSwitch(); invalidate() },
-  })
-
   const { mutate: doUpdateTeam, isPending: isUpdatingTeam } = useMutation({
     mutationFn: (args: { teamId: string; name?: string; color?: string }) =>
       updateTeam(gameId, args.teamId, { actorId: currentUser.id, ...args }),
@@ -102,8 +99,36 @@ export function TeamsView({
   const { mutate: doReassign } = useMutation({
     mutationFn: ({ participantId, teamId }: { participantId: string; teamId: string }) =>
       switchTeam(gameId, participantId, teamId),
-    onSuccess: () => { setMoveSheetParticipantId(null); invalidate() },
+    onSuccess: (_data, { participantId }) => {
+      if (participantId === currentUser.id) onSelfSwitch()
+      void invalidateGameQueriesWithViewTransition(queryClient, gameId)
+    },
   })
+
+  /** Anyone can drag their own row; owner can drag any row. Requires another team to exist. */
+  const reassignEnabled = teams.length > 1
+  const teamReassign = useTeamReassignDrag({
+    enabled: reassignEnabled,
+    teams,
+    onAssign: (participantId, teamId) => {
+      setFlashTeamId(teamId)
+      window.setTimeout(() => setFlashTeamId(null), 720)
+      doReassign({ participantId, teamId })
+    },
+  })
+  const reassignSession = teamReassign.session
+
+  /** While dragging, expand every team so all in-flow drop targets are reachable without extra taps. */
+  useEffect(() => {
+    if (!teamReassign.isDragging) return
+    setExpandedOtherTeams(prev => {
+      const next = { ...prev }
+      for (const t of teams) {
+        if (t.id !== me?.teamId) next[t.id] = true
+      }
+      return next
+    })
+  }, [teamReassign.isDragging, teams, me?.teamId])
 
   const { mutate: doRemovePlayer } = useMutation({
     mutationFn: (participantId: string) => removePlayer(gameId, participantId),
@@ -138,7 +163,9 @@ export function TeamsView({
   })
 
   return (
-    <div className="space-y-4">
+    <div className="relative">
+      <div className={cn(teamReassign.isDragging && 'relative z-[118]')}>
+        <div className="space-y-4">
       {sortedTeams.map(team => {
         const members = participants.filter(p => p.teamId === team.id)
         const isMine = me?.teamId === team.id
@@ -150,16 +177,35 @@ export function TeamsView({
         const teamColorKey = team.color.trim().toLowerCase()
         const teamExpanded = isTeamExpanded(team.id, isMine)
 
+        const dragActive = teamReassign.isDragging && reassignSession
+        const isDropHover =
+          dragActive &&
+          reassignSession.hoverTeamId === team.id &&
+          team.id !== reassignSession.fromTeamId
+        const isSourceTeam = dragActive && team.id === reassignSession.fromTeamId
+
         return (
           <div
             key={team.id}
+            data-team-drop={team.id}
             className={cn(
-              'rounded-2xl border overflow-hidden transition',
+              'rounded-2xl border overflow-hidden transition-[box-shadow,transform,opacity] duration-200 ease-out',
               isMine ? 'border-border' : 'border-border/60',
+              flashTeamId === team.id &&
+                'ring-2 ring-primary/55 ring-offset-2 ring-offset-background dark:ring-offset-zinc-950',
+              isSourceTeam &&
+                'ring-1 ring-dashed ring-muted-foreground/50 ring-inset bg-muted/20 dark:bg-zinc-900/60',
+              isDropHover && 'z-[1] scale-[1.01] ring-2 ring-dashed ring-primary bg-primary/[0.07] shadow-md dark:bg-primary/10',
+              dragActive && !isSourceTeam && !isDropHover && 'opacity-[0.88]',
             )}
           >
             {/* Colour bar */}
             <div className="h-1.5 w-full" style={{ backgroundColor: team.color }} />
+            {isDropHover && (
+              <p className="bg-primary/12 px-3 py-1.5 text-center text-[11px] font-medium leading-snug text-primary">
+                Release to assign here
+              </p>
+            )}
 
             {/* Card body — slightly lifted from page bg (esp. dark) */}
             <div className="space-y-3 bg-muted/15 p-4 dark:bg-zinc-900/45">
@@ -264,7 +310,7 @@ export function TeamsView({
                     </div>
                   </div>
                 ) : (
-                  // Title row: large name → edit/trash | player count (secondary) → Join
+                  // Title row: team name + edit/trash | player count + MY TEAM when yours
                   <>
                     <div className="flex min-h-[40px] flex-wrap items-center gap-x-3 gap-y-2">
                       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
@@ -289,7 +335,6 @@ export function TeamsView({
                                 onClick={() => {
                                   setConfirmDeleteId(team.id)
                                   setEditingTeamId(null)
-                                  setMoveSheetParticipantId(null)
                                   setTeamExpanded(team.id, true)
                                 }}
                                 aria-label="Delete team"
@@ -301,14 +346,11 @@ export function TeamsView({
                           </span>
                         )}
                       </div>
-                      <div className="ml-auto flex shrink-0 items-center gap-2">
-                        <span className="whitespace-nowrap text-sm tabular-nums text-secondary-foreground">
-                          {members.length} player{members.length === 1 ? '' : 's'}
-                        </span>
-                        {isMine ? (
+                      <div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-4">
+                        {isMine && (
                           <span
                             className={cn(
-                              'inline-flex h-[2.25rem] w-[6.25rem] shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-semibold uppercase tracking-wide shadow-sm',
+                              'inline-flex shrink-0 items-center justify-center rounded-full px-2 py-1 text-[10px] font-semibold uppercase leading-none tracking-wide shadow-sm',
                               contrastTextClass(team.color),
                             )}
                             style={{ backgroundColor: team.color }}
@@ -316,17 +358,10 @@ export function TeamsView({
                           >
                             MY TEAM
                           </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => doSwitchTeam(team.id)}
-                            disabled={isSwitching}
-                            className="box-border inline-flex h-[2.25rem] w-[6.25rem] shrink-0 items-center justify-center rounded-lg border px-1.5 text-xs font-semibold transition disabled:opacity-50 active:opacity-60"
-                            style={{ borderColor: team.color, color: team.color }}
-                          >
-                            {isSwitching ? 'Switching…' : 'Join team'}
-                          </button>
                         )}
+                        <span className="whitespace-nowrap text-sm tabular-nums text-secondary-foreground">
+                          {members.length} player{members.length === 1 ? '' : 's'}
+                        </span>
                       </div>
                     </div>
                   </>
@@ -344,28 +379,23 @@ export function TeamsView({
                     const isGameOwner = p.id === game.ownerId
                     const otherTeams = teams.filter(t => t.id !== team.id)
 
-                    const showMove = isOwner && otherTeams.length > 0
+                    const showMove = otherTeams.length > 0 && (isMe || isOwner)
                     const showRemove = isOwner && !isGameOwner && !isMe
+                    const hideForDrag =
+                      teamReassign.isDragging &&
+                      reassignSession &&
+                      p.id !== reassignSession.participantId
+                    const isSourcePlayerRow =
+                      teamReassign.isDragging &&
+                      reassignSession &&
+                      p.id === reassignSession.participantId
 
                     const ownerInline = isOwner && (
                       <span className="inline-flex items-center gap-0.5">
-                        {showMove && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMoveSheetParticipantId(p.id)
-                              setEditingTeamId(null)
-                              setConfirmDeleteId(null)
-                            }}
-                            aria-label={`Move ${p.username} to another team`}
-                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition active:bg-secondary/60 sm:h-8 sm:w-8"
-                          >
-                            <ArrowRightLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          </button>
-                        )}
                         {showRemove && (
                           <button
                             type="button"
+                            data-team-reassign-no-drag=""
                             onClick={() => doRemovePlayer(p.id)}
                             aria-label={`Remove ${p.username} from game`}
                             className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-destructive/80 transition active:bg-destructive/10 sm:h-8 sm:w-8"
@@ -385,45 +415,56 @@ export function TeamsView({
                       </div>
                     )
 
+                    const dragHandlers = showMove ? teamReassign.getCardPointerHandlers(p) : {}
+
                     return (
-                      <li key={p.id}>
+                      <li key={p.id} className={cn(hideForDrag && 'hidden')}>
                         <div
                           className={cn(
-                            'overflow-hidden rounded-xl border bg-muted/5 dark:bg-zinc-950/55',
-                            isMe ? 'border-2' : 'border-border',
+                            'overflow-hidden rounded-xl border border-border bg-muted/5 dark:bg-zinc-950/55',
+                            showMove && 'touch-none select-none',
+                            isSourcePlayerRow &&
+                              'border-dashed border-muted-foreground/35 bg-muted/25 opacity-[0.42] dark:bg-zinc-950/40',
                           )}
-                          style={
-                            isMe
-                              ? {
-                                  borderColor: team.color,
-                                  boxShadow: `0 0 0 1px color-mix(in srgb, ${team.color} 25%, transparent)`,
-                                }
-                              : undefined
-                          }
+                          {...dragHandlers}
                         >
                           {isMe ? (
                             <div className="px-4 py-3">
                               <LobbySelfTile
                                 gameId={gameId}
                                 participant={p}
+                                leadingAccessory={showMove ? <TeamReassignGrip /> : undefined}
                                 avatar={avatarEl}
                                 nameTrailing={ownerInline}
+                                teamColor={team.color}
                               />
                             </div>
                           ) : (
-                            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3">
+                            <div
+                              className={cn(
+                                'grid items-center gap-x-3 gap-y-2 px-4 py-3',
+                                showMove
+                                  ? 'grid-cols-[auto_auto_minmax(0,1fr)_auto]'
+                                  : 'grid-cols-[auto_minmax(0,1fr)_auto]',
+                              )}
+                            >
+                              {showMove ? <TeamReassignGrip /> : null}
                               <div className="flex shrink-0 items-center">{avatarEl}</div>
                               <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                 <span className="min-w-0 truncate text-sm font-medium">{p.username}</span>
                                 {isGameOwner && (
-                                  <Crown className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />
+                                  <span data-team-reassign-no-drag="" className="inline-flex">
+                                    <Crown className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />
+                                  </span>
                                 )}
                                 {ownerInline}
                               </div>
-                              <ParticipantPermissionStatus
-                                participant={p}
-                                className="shrink-0"
-                              />
+                              <div data-team-reassign-no-drag="" className="shrink-0 justify-self-end">
+                                <ParticipantPermissionStatus
+                                  participant={p}
+                                  className="shrink-0"
+                                />
+                              </div>
                             </div>
                           )}
                         </div>
@@ -439,7 +480,7 @@ export function TeamsView({
                   onClick={() => toggleOtherTeamExpanded(team.id)}
                   aria-expanded={teamExpanded}
                   aria-label={teamExpanded ? 'Collapse team roster' : 'Expand team roster'}
-                  className="flex w-full items-center justify-center rounded-lg bg-background/40 py-2.5 text-muted-foreground active:bg-secondary/40"
+                  className="flex w-full items-center justify-center rounded-lg bg-background/40 py-1 text-muted-foreground active:bg-secondary/40"
                 >
                   {teamExpanded ? (
                     <ChevronsUp className="h-4 w-4 opacity-80" aria-hidden />
@@ -457,12 +498,19 @@ export function TeamsView({
         <button
           type="button"
           onClick={() => setShowAddTeam(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3.5 text-sm font-medium text-muted-foreground transition active:opacity-60"
+          disabled={teamReassign.isDragging}
+          className={cn(
+            'flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3.5 text-sm font-medium text-muted-foreground transition active:opacity-60',
+            teamReassign.isDragging && 'pointer-events-none opacity-40',
+          )}
         >
           <Plus className="h-4 w-4 shrink-0" aria-hidden />
           Add team
         </button>
       )}
+
+        </div>
+      </div>
 
       {isOwner && showAddTeam && (
         <div
@@ -486,56 +534,7 @@ export function TeamsView({
         </div>
       )}
 
-      {moveSheetParticipantId &&
-        (() => {
-          const p = participants.find(x => x.id === moveSheetParticipantId)
-          if (!p) return null
-          const destinations = teams.filter(t => t.id !== p.teamId)
-          if (destinations.length === 0) return null
-
-          return (
-            <div
-              className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/50 backdrop-blur-sm"
-              onClick={() => setMoveSheetParticipantId(null)}
-              role="presentation"
-            >
-              <div
-                className="max-h-[min(70dvh,480px)] w-full overflow-y-auto scroll-momentum rounded-t-3xl bg-background px-4 pt-2 pb-safe shadow-2xl"
-                onClick={e => e.stopPropagation()}
-              >
-                <div className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
-                <p className="mb-1 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Move to team
-                </p>
-                <p className="mb-4 text-center text-base font-semibold">{p.username}</p>
-                <ul className="space-y-1 pb-2">
-                  {destinations.map(t => (
-                    <li key={t.id}>
-                      <button
-                        type="button"
-                        onClick={() => doReassign({ participantId: p.id, teamId: t.id })}
-                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-medium active:bg-secondary/60"
-                      >
-                        <span
-                          className="h-3 w-3 shrink-0 rounded-full"
-                          style={{ backgroundColor: t.color }}
-                        />
-                        {t.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => setMoveSheetParticipantId(null)}
-                  className="mb-1 w-full rounded-xl border border-border py-3 text-sm font-medium"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )
-        })()}
+      {teamReassign.dragChrome}
     </div>
   )
 }
