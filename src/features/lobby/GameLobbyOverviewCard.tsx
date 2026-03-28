@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, Crown, Ellipsis, Layers, Plus, Share2, User, UserPlus, X } from 'lucide-react'
+import { Crown, Ellipsis, Layers, Plus, Share2, User, UserPlus, X } from 'lucide-react'
 import {
   updateGameSettings,
   type MockGame,
@@ -113,6 +113,8 @@ interface Props {
   teams: MockTeam[]
   isOwner: boolean
   actorId: string
+  /** Opens the invite bottom sheet (same as header user-plus). */
+  onOpenInviteSheet: () => void
   /** Owner-only: primary CTA at the bottom of this card (not docked to viewport). */
   startGame?: StartGameCta
 }
@@ -124,12 +126,12 @@ export function GameLobbyOverviewCard({
   teams,
   isOwner,
   actorId,
+  onOpenInviteSheet,
   startGame,
 }: Props) {
   const queryClient = useQueryClient()
   const owner = participants.find(p => p.id === game.ownerId)
 
-  const [inviteOpen, setInviteOpen] = useState(false)
   const [showAddTeam, setShowAddTeam] = useState(false)
   const [goalsValue, setGoalsValue] = useState(() => clampGoals(game.goalsRequired))
   useEffect(() => {
@@ -214,7 +216,7 @@ export function GameLobbyOverviewCard({
           </span>
           <button
             type="button"
-            onClick={() => setInviteOpen(true)}
+            onClick={onOpenInviteSheet}
             className={badgeIconBtn}
             aria-label="Invite players — game ID and share link"
           >
@@ -260,7 +262,7 @@ export function GameLobbyOverviewCard({
       {canEditSettings ? (
         <div className="mt-4 flex flex-row gap-3 items-stretch">
           <div className={settingsTile}>
-            <p className={settingsTileTitle}>Time limit</p>
+            <p className={settingsTileTitle}>Set time limit</p>
             <CircularHourDial
               centerSubtitle=""
               hours={dialHours}
@@ -270,7 +272,7 @@ export function GameLobbyOverviewCard({
             />
           </div>
           <div className={settingsTile}>
-            <p className={settingsTileTitle}>Goals</p>
+            <p className={settingsTileTitle}>Set Number of Goals</p>
             <div className={settingsTileBodyCenter}>
               <GoalsSlider value={goalsValue} onValueChange={onGoalsChange} disabled={isPending} />
             </div>
@@ -332,10 +334,6 @@ export function GameLobbyOverviewCard({
         )
       )}
 
-      {inviteOpen && (
-        <InvitePlayersSheet gameId={gameId} gameName={game.name} onClose={() => setInviteOpen(false)} />
-      )}
-
       {isOwner && showAddTeam && (
         <div
           className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/50 backdrop-blur-sm"
@@ -361,7 +359,7 @@ export function GameLobbyOverviewCard({
   )
 }
 
-function InvitePlayersSheet({
+export function InvitePlayersSheet({
   gameId,
   gameName,
   onClose,
@@ -370,6 +368,38 @@ function InvitePlayersSheet({
   gameName: string
   onClose: () => void
 }) {
+  const [shareState, setShareState] = useState<'idle' | 'copied' | 'error'>('idle')
+
+  const joinUrl =
+    typeof window !== 'undefined' ? `${window.location.origin}/join?id=${gameId}` : ''
+  const shareText = `Join our scavenger hunt at ${joinUrl}. Use the game id ${gameId} to join`
+
+  async function handleNativeShare() {
+    setShareState('idle')
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: gameName,
+          text: shareText,
+        })
+      } else {
+        await navigator.clipboard.writeText(shareText)
+        setShareState('copied')
+        window.setTimeout(() => setShareState('idle'), 2500)
+      }
+    } catch (err) {
+      const name = err instanceof Error ? err.name : ''
+      if (name === 'AbortError') return
+      try {
+        await navigator.clipboard.writeText(shareText)
+        setShareState('copied')
+        window.setTimeout(() => setShareState('idle'), 2500)
+      } catch {
+        setShareState('error')
+      }
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-[100] flex flex-col justify-end bg-black/50 backdrop-blur-sm"
@@ -377,7 +407,7 @@ function InvitePlayersSheet({
       role="presentation"
     >
       <div
-        className="max-h-[min(85dvh,420px)] w-full overflow-y-auto scroll-momentum rounded-t-3xl bg-background px-5 pt-3 pb-safe shadow-2xl"
+        className="max-h-[min(85dvh,480px)] w-full overflow-y-auto scroll-momentum rounded-t-3xl bg-background px-5 pt-3 pb-safe shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
@@ -391,83 +421,43 @@ function InvitePlayersSheet({
             <X className="h-4 w-4" />
           </button>
           <h2 className="pr-10 text-center text-lg font-semibold leading-tight">Invite players</h2>
-          <p className="mt-2 text-center text-sm leading-relaxed text-muted-foreground">
-            Share the code or link — anyone with it can join. Updates appear for everyone within a few
-            seconds.
-          </p>
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <span className="font-mono text-3xl font-bold tracking-widest">{gameId}</span>
-          <div className="flex shrink-0 gap-2">
-            <CopyButton gameId={gameId} />
-            <ShareButton gameId={gameId} gameName={gameName} />
+          <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              Tap <span className="font-medium text-foreground">Share</span> below to open your
+              device&apos;s share sheet and send an invite.
+            </p>
+            <p>
+              Your message will include the join link and game ID so friends can open the link or enter{' '}
+              <span className="font-mono font-semibold tabular-nums text-foreground">{gameId}</span> on
+              the home screen.
+            </p>
           </div>
         </div>
 
         <button
           type="button"
+          onClick={handleNativeShare}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-base font-semibold text-primary-foreground shadow-sm active:opacity-90"
+        >
+          <Share2 className="h-5 w-5 shrink-0" aria-hidden />
+          Share invite
+        </button>
+
+        {shareState === 'copied' && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">Message copied to clipboard.</p>
+        )}
+        {shareState === 'error' && (
+          <p className="mt-2 text-center text-xs text-destructive">Couldn&apos;t share. Try again.</p>
+        )}
+
+        <button
+          type="button"
           onClick={onClose}
-          className="mb-1 mt-6 w-full rounded-xl border border-border py-3 text-sm font-medium active:bg-secondary/40"
+          className="mb-1 mt-4 w-full rounded-xl border border-border py-3 text-sm font-medium active:bg-secondary/40"
         >
           Done
         </button>
       </div>
     </div>
-  )
-}
-
-function CopyButton({ gameId }: { gameId: string }) {
-  const [copied, setCopied] = useState(false)
-  async function handleCopy() {
-    await navigator.clipboard.writeText(gameId)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      aria-label="Copy game code"
-      className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium active:opacity-60"
-    >
-      {copied ? (
-        <>
-          <Check className="h-4 w-4 text-green-500" aria-hidden />
-          Copied
-        </>
-      ) : (
-        <>
-          <Copy className="h-4 w-4" aria-hidden />
-          Copy
-        </>
-      )}
-    </button>
-  )
-}
-
-function ShareButton({ gameId, gameName }: { gameId: string; gameName: string }) {
-  const joinUrl = `${window.location.origin}/join?id=${gameId}`
-  async function handleShare() {
-    if (navigator.share) {
-      await navigator.share({
-        title: gameName,
-        text: `Join my hunt! Code: ${gameId}`,
-        url: joinUrl,
-      })
-    } else {
-      await navigator.clipboard.writeText(joinUrl)
-    }
-  }
-  return (
-    <button
-      type="button"
-      onClick={handleShare}
-      aria-label="Share join link"
-      className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground active:opacity-80"
-    >
-      <Share2 className="h-4 w-4" aria-hidden />
-      Share
-    </button>
   )
 }

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query'
-import { Check, Copy, Crown, Share2, Users, X, Trash2 } from 'lucide-react'
+import { Check, Copy, Crown, UserPlus, Users, X, Trash2 } from 'lucide-react'
 import { getGame, startGame, leaveGame, removePlayer, getCurrentUser, clearCurrentUser } from '@/lib/mock'
-import { GameLobbyOverviewCard } from '@/features/lobby/GameLobbyOverviewCard'
+import { GameLobbyOverviewCard, InvitePlayersSheet } from '@/features/lobby/GameLobbyOverviewCard'
 import { CreateTeamsPanel } from '@/features/lobby/CreateTeamsPanel'
 import { PermissionsGate } from '@/features/lobby/PermissionsGate'
 import { LobbySelfTile } from '@/features/lobby/LobbySelfTile'
@@ -29,6 +29,7 @@ function GamePage() {
   const [showPermissionsGate, setShowPermissionsGate] = useState(
     () => !isPermissionsGateMarkedShown(),
   )
+  const [inviteSheetOpen, setInviteSheetOpen] = useState(false)
 
   // ── Team-change detection ─────────────────────────────────────────────────
   // prevTeamIdRef: null = first load (skip comparison), string = last known teamId
@@ -173,7 +174,14 @@ function GamePage() {
               </p>
               <div className="flex shrink-0 items-center gap-0.5 border-l border-secondary-foreground/20 pl-2">
                 <HeaderCopyGameIdButton gameId={gameId} inSecondaryPill />
-                <HeaderShareGameButton gameId={gameId} gameName={game.name} inSecondaryPill />
+                <button
+                  type="button"
+                  onClick={() => setInviteSheetOpen(true)}
+                  aria-label="Invite players"
+                  className="tap-target-compact flex h-8 w-8 items-center justify-center rounded-md text-secondary-foreground transition hover:bg-secondary-foreground/10 active:bg-secondary-foreground/18 sm:h-9 sm:w-9"
+                >
+                  <UserPlus className="h-4 w-4" aria-hidden />
+                </button>
               </div>
             </div>
           </div>
@@ -190,6 +198,7 @@ function GamePage() {
           teams={teams}
           isOwner={isOwner}
           actorId={currentUser!.id}
+          onOpenInviteSheet={() => setInviteSheetOpen(true)}
           startGame={
             isOwner && game.status === 'LOBBY'
               ? {
@@ -361,6 +370,14 @@ function GamePage() {
           </div>
         </div>
       )}
+
+      {inviteSheetOpen && (
+        <InvitePlayersSheet
+          gameId={gameId}
+          gameName={game.name}
+          onClose={() => setInviteSheetOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -401,43 +418,6 @@ function HeaderCopyGameIdButton({
       ) : (
         <Copy className="h-4 w-4" aria-hidden />
       )}
-    </button>
-  )
-}
-
-function HeaderShareGameButton({
-  gameId,
-  gameName,
-  inSecondaryPill,
-}: {
-  gameId: string
-  gameName: string
-  inSecondaryPill?: boolean
-}) {
-  async function handleShare() {
-    const joinUrl = `${window.location.origin}/join?id=${gameId}`
-    if (navigator.share) {
-      await navigator.share({
-        title: gameName,
-        text: `Join my hunt! Code: ${gameId}`,
-        url: joinUrl,
-      })
-    } else {
-      await navigator.clipboard.writeText(joinUrl)
-    }
-  }
-  return (
-    <button
-      type="button"
-      onClick={handleShare}
-      aria-label="Share join link"
-      className={
-        inSecondaryPill
-          ? 'tap-target-compact flex h-8 w-8 items-center justify-center rounded-md text-secondary-foreground transition hover:bg-secondary-foreground/10 active:bg-secondary-foreground/18 sm:h-9 sm:w-9'
-          : 'tap-target-compact flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground active:bg-secondary/60 sm:h-9 sm:w-9'
-      }
-    >
-      <Share2 className="h-4 w-4" aria-hidden />
     </button>
   )
 }
