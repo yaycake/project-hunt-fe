@@ -1,7 +1,7 @@
 /** Polyfill for crypto.randomUUID — not available in Safari < 15.4 */
 function uuid(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return uuid()
+    return crypto.randomUUID()
   }
   // Fallback: RFC 4122 v4 UUID
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -53,11 +53,24 @@ export interface MockTeam {
   gameId: string
 }
 
+/** Reported by each client; visible to all players in the lobby (poll / GET game). */
+export type ParticipantLocationPermission = 'granted' | 'denied' | 'unavailable' | 'pending'
+
+export type ParticipantNotificationPermission =
+  | 'granted'
+  | 'denied'
+  | 'unsupported'
+  | 'pending'
+
 export interface MockParticipant {
   id: string
   username: string
   gameId: string
   teamId?: string
+  /** Last known browser location permission (self-reported). */
+  locationPermission?: ParticipantLocationPermission
+  /** Last known browser notification permission (self-reported). */
+  notificationPermission?: ParticipantNotificationPermission
 }
 
 export interface MockCurrentUser {
@@ -94,9 +107,31 @@ async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...options,
   })
   if (res.status === 204) return undefined as T
-  const body = await res.json()
-  if (!res.ok) throw new Error(body.message ?? `HTTP ${res.status}`)
-  return body as T
+
+  const text = await res.text()
+  if (text.length === 0) {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return undefined as T
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    const htmlHint = text.trimStart().startsWith('<')
+      ? ' The response was HTML (often the app shell or a proxy error). For local mock data, run `npm run server` in a second terminal so `/api` is served on port 3001; `npm run dev` proxies `/api` to it.'
+      : ''
+    throw new Error(`API did not return JSON.${htmlHint}`)
+  }
+
+  if (!res.ok) {
+    const msg =
+      typeof parsed === 'object' && parsed !== null && 'message' in parsed
+        ? String((parsed as { message: unknown }).message)
+        : `HTTP ${res.status}`
+    throw new Error(msg)
+  }
+  return parsed as T
 }
 
 // ─── Game API ─────────────────────────────────────────────────────────────────
@@ -181,18 +216,41 @@ export async function createTeams(
 
 /**
  * BACKEND DEV:
- *   PATCH /api/games/:gameId/teams/:teamId
- *   body:    { name }
+ *   POST /api/games/:gameId/teams/add
+ *   body:    { name, color, actorId } — owner only; appends one team without reassigning players.
  *   returns: { team }
  */
-export async function updateTeamName(
+export async function addTeam(
+  gameId: string,
+  payload: { name: string; color: string; actorId: string },
+): Promise<{ team: MockTeam }> {
+  return api(`/api/games/${gameId}/teams/add`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+/**
+ * BACKEND DEV:
+ *   PATCH /api/games/:gameId/teams/:teamId
+ *   body:    { actorId, name?, color? }
+ *   name:    game owner, or a member of that team
+ *   color:   member of that team, or game owner (any team)
+ *   returns: { team }
+ */
+export async function updateTeam(
   gameId: string,
   teamId: string,
-  name: string,
+  payload: { actorId: string; name?: string; color?: string },
 ): Promise<{ team: MockTeam }> {
+  const body: { actorId: string; name?: string; color?: string } = {
+    actorId: payload.actorId,
+  }
+  if (payload.name !== undefined) body.name = payload.name
+  if (payload.color !== undefined) body.color = payload.color
   return api(`/api/games/${gameId}/teams/${teamId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(body),
   })
 }
 
@@ -225,6 +283,48 @@ export async function switchTeam(
     method: 'PATCH',
     body: JSON.stringify({ teamId }),
   })
+}
+
+/**
+ * BACKEND DEV:
+ *   PATCH /api/games/:gameId/participants/:participantId
+ *   body:    { username }
+ *   returns: { participant }
+ */
+export async function updateParticipantUsername(
+  gameId: string,
+  participantId: string,
+  username: string,
+): Promise<{ participant: MockParticipant }> {
+  const data = await api<{ participant: MockParticipant }>(
+    `/api/games/${gameId}/participants/${participantId}`,
+    { method: 'PATCH', body: JSON.stringify({ username: username.trim() }) },
+  )
+  const me = getCurrentUser()
+  if (me?.id === participantId) {
+    setCurrentUser({ ...me, username: data.participant.username })
+  }
+  return data
+}
+
+/**
+ * BACKEND DEV:
+ *   PATCH /api/games/:gameId/participants/:participantId
+ *   body:    { locationPermission?, notificationPermission? } (partial)
+ *   returns: { participant }
+ */
+export async function updateParticipantPermissions(
+  gameId: string,
+  participantId: string,
+  payload: {
+    locationPermission?: ParticipantLocationPermission
+    notificationPermission?: ParticipantNotificationPermission
+  },
+): Promise<{ participant: MockParticipant }> {
+  return api<{ participant: MockParticipant }>(
+    `/api/games/${gameId}/participants/${participantId}`,
+    { method: 'PATCH', body: JSON.stringify(payload) },
+  )
 }
 
 /**

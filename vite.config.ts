@@ -66,4 +66,13 @@ export default defineConfig({
       },
     },
   },
+  // Same proxy for `vite preview` — without it, /api requests return index.html (JSON parse error).
+  preview: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
 })

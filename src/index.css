@@ -125,6 +125,13 @@
     min-width: 44px;
   }
 
+  /* Opt out when the design needs a smaller hit area (e.g. color dots). */
+  button.tap-target-compact,
+  [role='button'].tap-target-compact {
+    min-height: 0;
+    min-width: 0;
+  }
+
   /* ─── Reduced motion ─────────────────────────────────────────────────────
      Respect the user's OS-level "reduce motion" preference.
      Collapses all transitions/animations to near-zero without removing

@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { Copy, Check, Share2, Crown, Users, X } from 'lucide-react'
-import { getGame, startGame, leaveGame, getCurrentUser, clearCurrentUser } from '@/lib/mock'
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query'
+import { Copy, Check, Share2, Crown, Users, X, Trash2 } from 'lucide-react'
+import { getGame, startGame, leaveGame, removePlayer, getCurrentUser, clearCurrentUser } from '@/lib/mock'
 import { CreateTeamsPanel } from '@/features/lobby/CreateTeamsPanel'
+import { PermissionsGate } from '@/features/lobby/PermissionsGate'
+import { LobbySelfTile } from '@/features/lobby/LobbySelfTile'
+import { ParticipantPermissionStatus } from '@/features/lobby/ParticipantPermissionStatus'
 import { TeamsView } from '@/features/lobby/TeamsView'
+import { markPermissionsGateShown, isPermissionsGateMarkedShown } from '@/features/lobby/permissionsGateStorage'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/game/$gameId')({
@@ -16,10 +20,16 @@ function GamePage() {
   const navigate      = useNavigate()
   const currentUser   = getCurrentUser()
 
+  const queryClient = useQueryClient()
+
   // ── UI state ─────────────────────────────────────────────────────────────
   const [showCreateTeams, setShowCreateTeams] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [reassignBanner, setReassignBanner] = useState<string | null>(null)
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
+  const [showPermissionsGate, setShowPermissionsGate] = useState(
+    () => !isPermissionsGateMarkedShown(),
+  )
 
   // ── Team-change detection ─────────────────────────────────────────────────
   // prevTeamIdRef: null = first load (skip comparison), string = last known teamId
@@ -89,6 +99,14 @@ function GamePage() {
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
+  const { mutate: doRemovePlayer } = useMutation({
+    mutationFn: (participantId: string) => removePlayer(gameId, participantId),
+    onSuccess: () => {
+      setConfirmRemoveId(null)
+      queryClient.invalidateQueries({ queryKey: ['game', gameId] })
+    },
+  })
+
   const { mutate: handleStart, isPending: isStarting } = useMutation({
     mutationFn: () => startGame(gameId),
     // BACKEND DEV: Socket.IO 'game:started' will push all clients to the
@@ -113,13 +131,24 @@ function GamePage() {
   if (isLoading) return <LoadingScreen />
   if (isError || !data) return <ErrorScreen gameId={gameId} />
 
+  if (showPermissionsGate) {
+    return (
+      <PermissionsGate
+        onContinue={() => {
+          markPermissionsGateShown()
+          setShowPermissionsGate(false)
+        }}
+      />
+    )
+  }
+
   const { game, participants, teams } = data
   const isOwner  = currentUser?.id === game.ownerId
   const canStart = isOwner && participants.length >= 2
   const hasTeams = teams.length > 0
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden">
 
       {/* ── Reassignment banner ───────────────────────────────────────────── */}
       {reassignBanner && (
@@ -134,7 +163,7 @@ function GamePage() {
       )}
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-sm pt-safe px-4 pb-3">
+      <header className="z-40 shrink-0 border-b border-border bg-background/90 backdrop-blur-sm pt-safe px-4 pb-3">
         <div className="flex items-start justify-between pt-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Lobby</p>
@@ -142,7 +171,7 @@ function GamePage() {
           </div>
           {isOwner && (
             <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-              <Crown className="h-3 w-3" />
+              <Crown className="h-4 w-4" />
               Owner
             </span>
           )}
@@ -150,7 +179,7 @@ function GamePage() {
       </header>
 
       {/* ── Scrollable content ───────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto scroll-momentum px-4 py-6 space-y-6">
+      <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain scroll-momentum px-4 py-6 space-y-6">
 
         {/* Game code + share */}
         <section className="rounded-2xl border border-border bg-secondary/40 p-5 space-y-3">
@@ -199,23 +228,89 @@ function GamePage() {
               <span className="text-xs text-muted-foreground">{participants.length} joined</span>
             </div>
             <ul className="space-y-2">
-              {participants.map(p => (
-                <li
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-4 py-3"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                    {p.username.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="flex-1 text-sm font-medium">
-                    {p.username}
-                    {p.id === currentUser?.id && (
-                      <span className="ml-1.5 text-xs text-muted-foreground">(you)</span>
+              {participants.map(p => {
+                const isMe = p.id === currentUser?.id
+                const isGameOwner = p.id === game.ownerId
+                const canRemove = isOwner && !isMe && !isGameOwner
+                const isConfirming = confirmRemoveId === p.id
+                const teamForP = p.teamId ? teams.find(t => t.id === p.teamId) : undefined
+
+                return (
+                  <li
+                    key={p.id}
+                    className={cn(
+                      'overflow-hidden rounded-xl border bg-secondary/30',
+                      isMe
+                        ? teamForP
+                          ? 'border-2'
+                          : 'border-2 border-primary ring-1 ring-primary/25'
+                        : 'border-border',
                     )}
-                  </span>
-                  {p.id === game.ownerId && <Crown className="h-4 w-4 text-amber-400" />}
-                </li>
-              ))}
+                    style={
+                      isMe && teamForP
+                        ? {
+                            borderColor: teamForP.color,
+                            boxShadow: `0 0 0 1px color-mix(in srgb, ${teamForP.color} 25%, transparent)`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {/* Player row */}
+                    {isMe ? (
+                      <div className="px-4 py-3">
+                        <LobbySelfTile gameId={gameId} participant={p} />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                            {p.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="min-w-0 truncate text-sm font-medium">{p.username}</span>
+                            {isGameOwner && (
+                              <Crown className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />
+                            )}
+                            {canRemove && (
+                              <button
+                                onClick={() => setConfirmRemoveId(isConfirming ? null : p.id)}
+                                aria-label="Remove player"
+                                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/50 active:opacity-60 sm:h-8 sm:w-8"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              </button>
+                            )}
+                          </div>
+                          <ParticipantPermissionStatus participant={p} className="shrink-0" />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Inline confirm */}
+                    {isConfirming && (
+                      <div className="flex items-center justify-between gap-2 border-t border-border bg-background px-4 py-2.5">
+                        <p className="text-xs text-muted-foreground">
+                          Remove <span className="font-semibold text-foreground">{p.username}</span>?
+                        </p>
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            onClick={() => doRemovePlayer(p.id)}
+                            className="rounded-lg bg-destructive px-3 py-1 text-xs font-semibold text-destructive-foreground"
+                          >
+                            Remove
+                          </button>
+                          <button
+                            onClick={() => setConfirmRemoveId(null)}
+                            className="rounded-lg border border-border px-3 py-1 text-xs font-semibold"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
 
             {participants.length < 2 && (
@@ -225,7 +320,7 @@ function GamePage() {
             )}
 
             {/* Create Teams button — owner only, no teams yet */}
-            {isOwner && !showCreateTeams && (
+            {isOwner && (
               <button
                 onClick={() => setShowCreateTeams(true)}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3.5 text-sm font-medium text-muted-foreground transition active:opacity-60"
@@ -233,14 +328,6 @@ function GamePage() {
                 <Users className="h-4 w-4" />
                 Create Teams
               </button>
-            )}
-
-            {/* Inline create panel */}
-            {isOwner && showCreateTeams && (
-              <CreateTeamsPanel
-                gameId={gameId}
-                onClose={() => setShowCreateTeams(false)}
-              />
             )}
           </section>
         )}
@@ -279,7 +366,7 @@ function GamePage() {
 
       {/* ── Footer: Start Game (owner only) ──────────────────────────────── */}
       {isOwner && (
-        <footer className="sticky bottom-0 z-40 border-t border-border bg-background/90 backdrop-blur-sm px-4 pt-3 pb-safe">
+        <footer className="z-40 shrink-0 border-t border-border bg-background/90 backdrop-blur-sm px-4 pt-3 pb-safe">
           <button
             onClick={() => handleStart()}
             disabled={!canStart || isStarting}
@@ -297,6 +384,25 @@ function GamePage() {
                 : `Need ${2 - participants.length} more player${2 - participants.length === 1 ? '' : 's'}`}
           </button>
         </footer>
+      )}
+
+      {/* ── Create Teams overlay ──────────────────────────────────────────── */}
+      {isOwner && showCreateTeams && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCreateTeams(false) }}
+        >
+          <div className="w-full max-h-[90dvh] overflow-y-auto scroll-momentum rounded-t-3xl bg-background shadow-2xl">
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
+            </div>
+            <CreateTeamsPanel
+              gameId={gameId}
+              onClose={() => setShowCreateTeams(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   )
@@ -317,7 +423,7 @@ function CopyButton({ gameId }: { gameId: string }) {
       aria-label="Copy game code"
       className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium active:opacity-60"
     >
-      {copied ? <><Check className="h-3.5 w-3.5 text-green-500" />Copied</> : <><Copy className="h-3.5 w-3.5" />Copy</>}
+      {copied ? <><Check className="h-4 w-4 text-green-500" />Copied</> : <><Copy className="h-4 w-4" />Copy</>}
     </button>
   )
 }
@@ -338,7 +444,7 @@ function ShareButton({ gameId, gameName }: { gameId: string; gameName: string })
       aria-label="Share join link"
       className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground active:opacity-80"
     >
-      <Share2 className="h-3.5 w-3.5" />
+      <Share2 className="h-4 w-4" />
       Share
     </button>
   )

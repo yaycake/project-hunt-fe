@@ -137,15 +137,92 @@ app.post('/api/games/:gameId/teams', (req, res) => {
   res.json({ teams })
 })
 
-// BACKEND DEV: PATCH /api/games/:gameId/teams/:teamId
-// body:    { name }
+// BACKEND DEV: POST /api/games/:gameId/teams/add
+// body:    { name, color, actorId }
 // returns: { team }
-// Owner only.
+// Owner only. Appends one team; does not move existing participants (new team starts empty).
+app.post('/api/games/:gameId/teams/add', (req, res) => {
+  const { gameId } = req.params
+  const game = store.games[gameId]
+  if (!game) return res.status(404).json({ message: 'Game not found.' })
+
+  const { name, color, actorId } = req.body ?? {}
+  if (!actorId || actorId !== game.ownerId) {
+    return res.status(403).json({ message: 'Only the game owner can add a team.' })
+  }
+  if (typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ message: 'name must be a non-empty string.' })
+  }
+  if (typeof color !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(color)) {
+    return res.status(400).json({ message: 'color must be a #RRGGBB hex value.' })
+  }
+
+  const existing = store.teams[gameId] ?? []
+  if (!existing.length) {
+    return res.status(400).json({ message: 'Create teams first before adding another.' })
+  }
+
+  const team = {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    color,
+    gameId,
+  }
+  store.teams[gameId] = [...existing, team]
+
+  console.log(`[team added] ${gameId} — ${team.name}`)
+  res.json({ team })
+})
+
+// BACKEND DEV: PATCH /api/games/:gameId/teams/:teamId
+// body:    { actorId, name?, color? } — at least one of name/color
+// name:    game owner, or any member of that team
+// color:   any member of that team, or game owner (any team)
 app.patch('/api/games/:gameId/teams/:teamId', (req, res) => {
   const { gameId, teamId } = req.params
+  const game = store.games[gameId]
+  if (!game) return res.status(404).json({ message: 'Game not found.' })
+
   const team = (store.teams[gameId] ?? []).find(t => t.id === teamId)
   if (!team) return res.status(404).json({ message: 'Team not found.' })
-  team.name = req.body.name.trim()
+
+  const { name, color, actorId } = req.body ?? {}
+  const participants = store.participants[gameId] ?? []
+  const actor = actorId ? participants.find(p => p.id === actorId) : null
+
+  if (name === undefined && color === undefined) {
+    return res.status(400).json({ message: 'Provide name and/or color.' })
+  }
+  if (!actorId || !actor) {
+    return res.status(400).json({ message: 'actorId must refer to a participant in this game.' })
+  }
+
+  if (name !== undefined) {
+    const isGameOwner = actor.id === game.ownerId
+    const isMemberOfTeam = actor.teamId === teamId
+    if (!isGameOwner && !isMemberOfTeam) {
+      return res.status(403).json({
+        message: 'Only the game owner or a member of this team can rename it.',
+      })
+    }
+    if (typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ message: 'name must be a non-empty string.' })
+    }
+    team.name = name.trim()
+  }
+
+  if (color !== undefined) {
+    const isGameOwner = actor.id === game.ownerId
+    const isMemberOfTeam = actor.teamId === teamId
+    if (!isGameOwner && !isMemberOfTeam) {
+      return res.status(403).json({ message: 'You can only change the color of a team you belong to.' })
+    }
+    if (typeof color !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(color)) {
+      return res.status(400).json({ message: 'color must be a #RRGGBB hex value.' })
+    }
+    team.color = color
+  }
+
   res.json({ team })
 })
 
@@ -168,6 +245,45 @@ app.delete('/api/games/:gameId/teams/:teamId', (req, res) => {
 })
 
 // ─── Participants ─────────────────────────────────────────────────────────────
+
+// BACKEND DEV: PATCH /api/games/:gameId/participants/:participantId
+// body:    { username?, locationPermission?, notificationPermission? }
+// returns: { participant }
+app.patch('/api/games/:gameId/participants/:participantId', (req, res) => {
+  const { gameId, participantId } = req.params
+  const { username, locationPermission, notificationPermission } = req.body ?? {}
+  const p = (store.participants[gameId] ?? []).find(p => p.id === participantId)
+  if (!p) return res.status(404).json({ message: 'Participant not found.' })
+
+  let changed = false
+  if (username !== undefined) {
+    if (typeof username !== 'string' || !username.trim()) {
+      return res.status(400).json({ message: 'username must be a non-empty string when provided.' })
+    }
+    p.username = username.trim()
+    changed = true
+  }
+  const LOC = new Set(['granted', 'denied', 'unavailable', 'pending'])
+  if (locationPermission !== undefined) {
+    if (!LOC.has(locationPermission)) {
+      return res.status(400).json({ message: 'Invalid locationPermission.' })
+    }
+    p.locationPermission = locationPermission
+    changed = true
+  }
+  const NOTIF = new Set(['granted', 'denied', 'unsupported', 'pending'])
+  if (notificationPermission !== undefined) {
+    if (!NOTIF.has(notificationPermission)) {
+      return res.status(400).json({ message: 'Invalid notificationPermission.' })
+    }
+    p.notificationPermission = notificationPermission
+    changed = true
+  }
+  if (!changed) {
+    return res.status(400).json({ message: 'Provide username and/or permission fields.' })
+  }
+  res.json({ participant: p })
+})
 
 // BACKEND DEV: PATCH /api/games/:gameId/participants/:participantId/team
 // body:    { teamId }

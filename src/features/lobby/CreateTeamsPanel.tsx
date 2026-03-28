@@ -10,6 +10,30 @@ interface TeamDraft {
 
 const COUNTS = [2, 3, 4] as const
 
+function normHex(hex: string) {
+  return hex.toLowerCase()
+}
+
+/** Next palette color not already in `used` (mutates `used` when returning). */
+function takeNextUnusedColor(used: Set<string>): string | null {
+  for (const c of TEAM_COLORS) {
+    const h = normHex(c.hex)
+    if (!used.has(h)) {
+      used.add(h)
+      return c.hex
+    }
+  }
+  return null
+}
+
+function defaultDraftsForCount(n: number): TeamDraft[] {
+  const used = new Set<string>()
+  return Array.from({ length: n }, (_, i) => ({
+    name: `Team ${i + 1}`,
+    color: takeNextUnusedColor(used),
+  }))
+}
+
 interface Props {
   gameId: string
   onClose: () => void
@@ -19,18 +43,18 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
   const queryClient = useQueryClient()
 
   const [count, setCount] = useState<2 | 3 | 4>(2)
-  const [drafts, setDrafts] = useState<TeamDraft[]>([
-    { name: 'Team 1', color: null },
-    { name: 'Team 2', color: null },
-  ])
+  const [drafts, setDrafts] = useState<TeamDraft[]>(() => defaultDraftsForCount(2))
 
   function handleCountChange(n: 2 | 3 | 4) {
     setCount(n)
     setDrafts(prev => {
       if (n > prev.length) {
+        const used = new Set(
+          prev.map(d => d.color).filter(Boolean).map(c => normHex(c as string)),
+        )
         const extras = Array.from({ length: n - prev.length }, (_, i) => ({
           name: `Team ${prev.length + i + 1}`,
-          color: null as null,
+          color: takeNextUnusedColor(used),
         }))
         return [...prev, ...extras]
       }
@@ -46,7 +70,6 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
     setDrafts(prev => prev.map((d, idx) => idx === i ? { ...d, color: hex } : d))
   }
 
-  const usedColors = drafts.map(d => d.color).filter(Boolean) as string[]
   const isValid = drafts.every(d => d.name.trim() && d.color)
 
   const { mutate, isPending, error } = useMutation({
@@ -66,9 +89,9 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
         <button
           onClick={onClose}
           aria-label="Close"
-          className="flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground active:opacity-60"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:opacity-60 sm:h-8 sm:w-8"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </button>
       </div>
 
@@ -116,8 +139,15 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
             {/* Colour swatches */}
             <div className="flex flex-wrap gap-2.5 pt-0.5">
               {TEAM_COLORS.map(c => {
-                const isSelected = draft.color === c.hex
-                const isTaken = !isSelected && usedColors.includes(c.hex)
+                const isSelected =
+                  draft.color !== null && normHex(draft.color) === normHex(c.hex)
+                const takenByAnother = drafts.some(
+                  (d, j) =>
+                    j !== i &&
+                    d.color !== null &&
+                    normHex(d.color) === normHex(c.hex),
+                )
+                const isTaken = !isSelected && takenByAnother
                 return (
                   <button
                     key={c.id}
@@ -126,7 +156,7 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
                     onClick={() => setColor(i, c.hex)}
                     className={[
                       'h-8 w-8 rounded-full transition',
-                      isTaken ? 'opacity-20 cursor-not-allowed' : 'active:scale-90',
+                      isTaken ? 'cursor-not-allowed opacity-20' : 'active:scale-90',
                       isSelected ? 'ring-2 ring-offset-2 ring-offset-background ring-white/70' : '',
                     ].join(' ')}
                     style={{ backgroundColor: c.hex }}
