@@ -62,8 +62,10 @@ export function TeamsView({
 
   const me = participants.find(p => p.id === currentUser.id)
 
-  function isTeamExpanded(teamId: string, mine: boolean) {
-    return mine || expandedOtherTeams[teamId] === true
+  /** Yours is always open; others with ≤3 players have no toggle — always show full roster. */
+  function isTeamExpanded(teamId: string, mine: boolean, memberCount: number) {
+    if (mine || memberCount <= 3) return true
+    return expandedOtherTeams[teamId] === true
   }
 
   function setTeamExpanded(teamId: string, open: boolean) {
@@ -167,7 +169,11 @@ export function TeamsView({
       <div className={cn(teamReassign.isDragging && 'relative z-[118]')}>
         <div className="space-y-4">
       {sortedTeams.map(team => {
-        const members = participants.filter(p => p.teamId === team.id)
+        const membersOnTeam = participants.filter(p => p.teamId === team.id)
+        const members = [
+          ...membersOnTeam.filter(p => p.id === currentUser.id),
+          ...membersOnTeam.filter(p => p.id !== currentUser.id),
+        ]
         const isMine = me?.teamId === team.id
         const isEditingThis = editingTeamId === team.id
         const isConfirmingDelete = confirmDeleteId === team.id
@@ -175,7 +181,8 @@ export function TeamsView({
         /** Open team name + color editor: owner (any team) or member (own team only). */
         const canEditTeamDetails = isOwner || isMine
         const teamColorKey = team.color.trim().toLowerCase()
-        const teamExpanded = isTeamExpanded(team.id, isMine)
+        const teamExpanded = isTeamExpanded(team.id, isMine, members.length)
+        const showOtherTeamExpandToggle = !isMine && members.length > 3
 
         const dragActive = teamReassign.isDragging && reassignSession
         const isDropHover =
@@ -436,7 +443,6 @@ export function TeamsView({
                                 leadingAccessory={showMove ? <TeamReassignGrip /> : undefined}
                                 avatar={avatarEl}
                                 nameTrailing={ownerInline}
-                                teamColor={team.color}
                               />
                             </div>
                           ) : (
@@ -474,19 +480,26 @@ export function TeamsView({
                 </ul>
               )}
 
-              {!isMine && (
+              {showOtherTeamExpandToggle && (
                 <button
                   type="button"
                   onClick={() => toggleOtherTeamExpanded(team.id)}
                   aria-expanded={teamExpanded}
-                  aria-label={teamExpanded ? 'Collapse team roster' : 'Expand team roster'}
-                  className="flex w-full items-center justify-center rounded-lg bg-background/40 py-1 text-muted-foreground active:bg-secondary/40"
+                  aria-label={
+                    teamExpanded
+                      ? 'Show fewer players'
+                      : `View all ${members.length} players`
+                  }
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-background/40 py-1.5 text-muted-foreground active:bg-secondary/40"
                 >
                   {teamExpanded ? (
-                    <ChevronsUp className="h-4 w-4 opacity-80" aria-hidden />
+                    <ChevronsUp className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
                   ) : (
-                    <ChevronsDown className="h-4 w-4 opacity-80" aria-hidden />
+                    <ChevronsDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
                   )}
+                  <span className="text-[11px] font-medium leading-none text-secondary-foreground sm:text-xs">
+                    {teamExpanded ? 'Show less' : `View all ${members.length} players`}
+                  </span>
                 </button>
               )}
             </div>

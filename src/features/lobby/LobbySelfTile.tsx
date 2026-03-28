@@ -10,17 +10,6 @@ import { updateParticipantPermissions, updateParticipantUsername, type MockParti
 import { useLobbyPermissions } from '@/features/lobby/useLobbyPermissions'
 import { cn } from '@/lib/utils'
 
-/** Label text on team-colored pill — dark on light fills, white on dark. */
-function mePillContrastClass(hex: string): string {
-  const h = hex.replace('#', '').trim()
-  if (h.length !== 6 || !/^[0-9a-fA-F]+$/.test(h)) return 'text-white'
-  const r = Number.parseInt(h.slice(0, 2), 16)
-  const g = Number.parseInt(h.slice(2, 4), 16)
-  const b = Number.parseInt(h.slice(4, 6), 16)
-  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-  return luminance > 0.62 ? 'text-zinc-900' : 'text-white'
-}
-
 interface LobbySelfTileProps {
   gameId: string
   participant: MockParticipant
@@ -32,8 +21,6 @@ interface LobbySelfTileProps {
   avatarClassName?: string
   /** Shown on the name row after the display name, e.g. crown + owner actions */
   nameTrailing?: ReactNode
-  /** Team accent for the “Me” pill fill; falls back to white if unset */
-  teamColor?: string
 }
 
 export function LobbySelfTile({
@@ -43,7 +30,6 @@ export function LobbySelfTile({
   avatar,
   avatarClassName,
   nameTrailing,
-  teamColor,
 }: LobbySelfTileProps) {
   const queryClient = useQueryClient()
   const {
@@ -172,18 +158,7 @@ export function LobbySelfTile({
             ) : null}
             <div className="flex shrink-0 items-center">{avatar ?? defaultAvatar}</div>
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="text-sm font-medium">
-                {participant.username}
-                <span
-                  className={cn(
-                    'ml-2 inline-flex items-center rounded-full p-1 text-[11px] font-semibold leading-none',
-                    teamColor ? mePillContrastClass(teamColor) : 'bg-white text-zinc-950',
-                  )}
-                  style={teamColor ? { backgroundColor: teamColor } : undefined}
-                >
-                  Me
-                </span>
-              </span>
+              <span className="text-sm font-medium">{participant.username}</span>
               {nameTrailing}
               <button
                 type="button"

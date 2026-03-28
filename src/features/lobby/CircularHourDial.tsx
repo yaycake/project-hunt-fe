@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 const VIEW = 100
@@ -9,9 +9,16 @@ const R_MID = 37
 const STROKE = 8
 const R_OUT = R_MID + STROKE / 2
 const R_IN = R_MID - STROKE / 2
-/** Angular gap between unselected segments (degrees). */
-const GAP = 2.25
 const SEGMENTS = 12
+const STEP = 360 / SEGMENTS
+/**
+ * Empty degrees between segment paths so `stroke-linecap: round` semicircles don’t overlap.
+ * Needs arc length ≥ stroke: θ ≥ stroke/R (here θ in radians ≈ stroke/R).
+ * `GAP_VISUAL_EXTRA` adds a bit more space between hour ticks for readability.
+ */
+const GAP_VISUAL_EXTRA = 3.25
+const GAP =
+  (STROKE / R_MID) * (180 / Math.PI) * 1.06 + GAP_VISUAL_EXTRA
 
 function toRad(deg: number) {
   return (deg * Math.PI) / 180
@@ -48,7 +55,7 @@ function pointToHour(
   if (dist < R_IN - 4 || dist > R_OUT + 5) return null
   let deg = (Math.atan2(dx, -dy) * 180) / Math.PI
   if (deg < 0) deg += 360
-  const sector = Math.min(SEGMENTS - 1, Math.floor(deg / 30))
+  const sector = Math.min(SEGMENTS - 1, Math.floor(deg / STEP))
   const h = sector + 1
   return Math.max(minHours, Math.min(maxHours, h))
 }
@@ -79,6 +86,7 @@ export interface CircularHourDialProps {
   'aria-label'?: string
 }
 
+/** Round caps (pill ends); GAP is sized so neighbors stay visually separated. */
 const trackBase =
   'fill-none transition-[stroke] duration-150 [stroke-linejoin:round] [stroke-linecap:round]'
 
@@ -100,7 +108,6 @@ export function CircularHourDial({
   const svgRef = useRef<SVGSVGElement>(null)
   const lastHourRef = useRef(hours)
   const draggingRef = useRef(false)
-  const filterId = useId().replace(/:/g, '')
   const interactive = !disabled && !readOnly
 
   const clamped = Math.max(minHours, Math.min(maxHours, hours))
@@ -170,16 +177,15 @@ export function CircularHourDial({
     }
   }
 
-  const step = 360 / SEGMENTS
   const unselectedArcs: string[] = []
   for (let i = clamped; i < SEGMENTS; i++) {
-    const startDeg = -90 + i * step + GAP / 2
-    const sweepDeg = step - GAP
+    const startDeg = -90 + i * STEP + GAP / 2
+    const sweepDeg = STEP - GAP
     const d = arcStrokeD(CX, CY, R_MID, startDeg, sweepDeg)
     if (d) unselectedArcs.push(d)
   }
 
-  const selectedSweepDeg = clamped * step - GAP
+  const selectedSweepDeg = clamped * STEP - GAP
   const selectedStartDeg = -90 + GAP / 2
   const selectedPathD =
     clamped >= 12
@@ -212,16 +218,6 @@ export function CircularHourDial({
           onPointerCancel={onPointerUp}
           onKeyDown={onKeyDown}
         >
-          <defs>
-            <filter id={`glow-${filterId}`} x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="1.8" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-
           {/* Unselected hours: discrete translucent segments */}
           {unselectedArcs.map((d, idx) => (
             <path
@@ -244,7 +240,6 @@ export function CircularHourDial({
               fill="none"
               className={cn(trackBase, 'stroke-blue-500 dark:stroke-blue-400')}
               strokeWidth={STROKE}
-              style={{ filter: `url(#glow-${filterId})` }}
             />
           ) : (
             selectedPathD && (
@@ -252,7 +247,6 @@ export function CircularHourDial({
                 d={selectedPathD}
                 className={cn(trackBase, 'stroke-blue-500 dark:stroke-blue-400')}
                 strokeWidth={STROKE}
-                style={{ filter: `url(#glow-${filterId})` }}
               />
             )
           )}

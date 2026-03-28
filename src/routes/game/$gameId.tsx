@@ -226,8 +226,6 @@ function GamePage() {
                 const isGameOwner = p.id === game.ownerId
                 const canRemove = isOwner && !isMe && !isGameOwner
                 const isConfirming = confirmRemoveId === p.id
-                const teamForP = p.teamId ? teams.find(t => t.id === p.teamId) : undefined
-
                 return (
                   <li
                     key={p.id}
@@ -239,7 +237,6 @@ function GamePage() {
                         <LobbySelfTile
                           gameId={gameId}
                           participant={p}
-                          teamColor={teamForP?.color}
                         />
                       </div>
                     ) : (
