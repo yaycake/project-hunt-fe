@@ -316,6 +316,67 @@ export function useTeamReassignDrag({ enabled, teams, onAssign }: UseTeamReassig
   }
 }
 
+/** Light scrim during drag — not a bottom sheet; same z-index plane as `z-sheet-permission` (see `index.css`). */
+function TeamReassignScrim() {
+  return (
+    <div
+      data-team-reassign-scrim=""
+      className="pointer-events-none fixed inset-0 z-drag-scrim bg-background/25 backdrop-blur-[1px] dark:bg-black/35"
+      aria-hidden
+    />
+  )
+}
+
+function TeamReassignHintBar() {
+  return (
+    <div
+      className="pointer-events-none fixed inset-x-0 top-0 z-drag-hint flex justify-center pt-safe"
+      role="status"
+      aria-live="polite"
+    >
+      <p className="rounded-full bg-background/90 px-3 py-1.5 text-center text-[11px] font-medium text-foreground shadow-sm ring-1 ring-border/60 dark:bg-zinc-900/95">
+        Drag to another team card, then release. Use the grip ⋮⋮ for click-drag.
+      </p>
+    </div>
+  )
+}
+
+function TeamReassignGhostCard({
+  session,
+  fromTeam,
+  dragStyle,
+}: {
+  session: TeamReassignDragSession
+  fromTeam: MockTeam | undefined
+  dragStyle: CSSProperties
+}) {
+  return (
+    <div
+      data-team-reassign-ghost=""
+      className="pointer-events-none fixed z-drag-ghost flex max-w-[min(100vw-1.5rem,280px)] min-w-[200px] -translate-x-1/2 -translate-y-[calc(50%+12px)] flex-col gap-1 rounded-2xl border-2 border-primary/35 bg-card/95 px-3 py-2.5 shadow-2xl ring-2 ring-primary/20 backdrop-blur-sm dark:bg-zinc-950/95"
+      style={dragStyle}
+    >
+      <div className="flex items-center gap-2.5">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-inner ring-2 ring-white/15"
+          style={{ backgroundColor: fromTeam?.color ?? 'hsl(var(--primary))' }}
+        >
+          {session.username.charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold leading-tight text-foreground">{session.username}</p>
+          {fromTeam && (
+            <p className="truncate text-[11px] text-muted-foreground">From {fromTeam.name}</p>
+          )}
+        </div>
+      </div>
+      <p className="border-t border-border/60 pt-1.5 text-[10px] leading-snug text-muted-foreground">
+        Your row below stays in place until you drop on another team.
+      </p>
+    </div>
+  )
+}
+
 function TeamReassignDragChrome({
   session,
   teams,
@@ -332,43 +393,9 @@ function TeamReassignDragChrome({
 
   return (
     <>
-      <div
-        data-team-reassign-scrim=""
-        className="pointer-events-none fixed inset-0 z-[110] bg-background/25 backdrop-blur-[1px] dark:bg-black/35"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none fixed inset-x-0 top-0 z-[112] flex justify-center pt-safe"
-        role="status"
-        aria-live="polite"
-      >
-        <p className="rounded-full bg-background/90 px-3 py-1.5 text-center text-[11px] font-medium text-foreground shadow-sm ring-1 ring-border/60 dark:bg-zinc-900/95">
-          Drag to another team card, then release. Use the grip ⋮⋮ for click-drag.
-        </p>
-      </div>
-      <div
-        data-team-reassign-ghost=""
-        className="pointer-events-none fixed z-[125] flex max-w-[min(100vw-1.5rem,280px)] min-w-[200px] -translate-x-1/2 -translate-y-[calc(50%+12px)] flex-col gap-1 rounded-2xl border-2 border-primary/35 bg-card/95 px-3 py-2.5 shadow-2xl ring-2 ring-primary/20 backdrop-blur-sm dark:bg-zinc-950/95"
-        style={dragStyle}
-      >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-inner ring-2 ring-white/15"
-            style={{ backgroundColor: fromTeam?.color ?? 'hsl(var(--primary))' }}
-          >
-            {session.username.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold leading-tight text-foreground">{session.username}</p>
-            {fromTeam && (
-              <p className="truncate text-[11px] text-muted-foreground">From {fromTeam.name}</p>
-            )}
-          </div>
-        </div>
-        <p className="border-t border-border/60 pt-1.5 text-[10px] leading-snug text-muted-foreground">
-          Your row below stays in place until you drop on another team.
-        </p>
-      </div>
+      <TeamReassignScrim />
+      <TeamReassignHintBar />
+      <TeamReassignGhostCard session={session} fromTeam={fromTeam} dragStyle={dragStyle} />
     </>
   )
 }

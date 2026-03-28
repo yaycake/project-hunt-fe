@@ -127,7 +127,7 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
     () =>
       cn(
         'rounded-2xl border p-5 transition-colors',
-        locationOutcome === 'granted' && 'border-green-500/40 bg-green-500/5',
+        locationOutcome === 'granted' && 'border-success/40 bg-success/5',
         (locationOutcome === 'denied' || locationOutcome === 'unusable') &&
           'border-border bg-muted/30',
         (locationOutcome === 'idle' || locationOutcome === 'loading') &&
@@ -140,7 +140,7 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
     () =>
       cn(
         'rounded-2xl border p-5 transition-colors',
-        notificationOutcome === 'granted' && 'border-green-500/40 bg-green-500/5',
+        notificationOutcome === 'granted' && 'border-success/40 bg-success/5',
         (notificationOutcome === 'denied' || notificationOutcome === 'unsupported') &&
           'border-border bg-muted/30',
         (notificationOutcome === 'idle' || notificationOutcome === 'loading') &&
@@ -169,7 +169,7 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
               className={cn(
                 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
                 locationOutcome === 'granted'
-                  ? 'bg-green-500/15 text-green-600 dark:text-green-400'
+                  ? 'bg-success/15 text-success'
                   : 'bg-primary/10 text-primary',
               )}
             >
@@ -185,7 +185,7 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-base font-semibold">Location</h2>
                 {locationOutcome === 'granted' && (
-                  <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                  <span className="text-xs font-medium text-success">
                     Allowed
                   </span>
                 )}
@@ -261,7 +261,7 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
               className={cn(
                 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
                 notificationOutcome === 'granted'
-                  ? 'bg-green-500/15 text-green-600 dark:text-green-400'
+                  ? 'bg-success/15 text-success'
                   : 'bg-primary/10 text-primary',
               )}
             >
@@ -277,7 +277,7 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-base font-semibold">Notifications</h2>
                 {notificationOutcome === 'granted' && (
-                  <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                  <span className="text-xs font-medium text-success">
                     Allowed
                   </span>
                 )}

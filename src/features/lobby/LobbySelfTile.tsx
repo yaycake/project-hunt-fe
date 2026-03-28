@@ -121,7 +121,7 @@ export function LobbySelfTile({
               onClick={commitName}
               disabled={savingName}
               aria-label="Save name"
-              className="shrink-0 text-green-600 active:opacity-60 dark:text-green-400"
+              className="shrink-0 text-success active:opacity-60"
             >
               {savingName ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />

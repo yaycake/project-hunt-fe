@@ -22,7 +22,7 @@ export function AppShell({ children, header, footer, className }: AppShellProps)
   return (
     <div className="flex min-h-dvh flex-col">
       {header && (
-        <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-sm pt-safe">
+        <header className="sticky top-0 z-sticky-chrome border-b border-border bg-background/80 backdrop-blur-sm pt-safe">
           {header}
         </header>
       )}
@@ -30,7 +30,7 @@ export function AppShell({ children, header, footer, className }: AppShellProps)
         {children}
       </main>
       {footer && (
-        <footer className="sticky bottom-0 z-40 border-t border-border bg-background/80 backdrop-blur-sm pb-safe">
+        <footer className="sticky bottom-0 z-sticky-chrome border-t border-border bg-background/80 backdrop-blur-sm pb-safe">
           {footer}
         </footer>
       )}

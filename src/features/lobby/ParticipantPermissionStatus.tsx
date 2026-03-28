@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
-import { Bell, BellOff, MapPin, MapPinOff, X } from 'lucide-react'
+import { Bell, BellOff, MapPin, MapPinOff } from 'lucide-react'
 import type { MockParticipant } from '@/lib/mock'
 import { resolveParticipantPermissionBuckets } from '@/features/lobby/participantPermissionModel'
 import type { LocationPermissionUi, NotificationPermissionUi } from '@/features/lobby/useLobbyPermissions'
+import { BottomSheetFormChrome } from '@/components/ui/BottomSheetFormChrome'
 import { cn } from '@/lib/utils'
 
 /** Inline badges: fixed zinc + pill chrome — theme `muted-foreground` sits too close to body text for quick scanning. */
@@ -201,35 +202,12 @@ export function ParticipantPermissionStatus({ participant, className, selfPermis
 
 function PermissionSheet({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
-    <div
-      className="fixed inset-0 z-[110] flex flex-col justify-end bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className="max-h-[min(88dvh,640px)] w-full overflow-y-auto scroll-momentum rounded-t-3xl bg-background px-5 pt-3 pb-safe shadow-2xl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
-        <div className="relative pb-2">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="absolute right-0 top-0 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground active:bg-secondary/60"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          {children}
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mb-1 mt-6 w-full rounded-xl border border-border py-3 text-sm font-medium active:bg-secondary/40"
-        >
-          Done
-        </button>
-      </div>
-    </div>
+    <BottomSheetFormChrome
+      onClose={onClose}
+      zClassName="z-sheet-permission"
+      panelClassName="max-h-[min(88dvh,640px)] px-5 pt-3 pb-safe"
+      headerPadding="pb-2"
+      top={children}
+    />
   )
 }
