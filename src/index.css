@@ -54,19 +54,129 @@
   }
 }
 
+/* ─── Safe-area CSS variables ─────────────────────────────────────────────────
+   Expose env() values as custom props so any component can reference them
+   without memorising the env() syntax. AppShell uses these on header/footer.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
+}
+
 @layer base {
+  /* ─── Reset & border colour ─────────────────────────────────────────────── */
   * {
     border-color: hsl(var(--border));
+
+    /*
+      Remove the default blue tap flash on mobile Safari/Chrome.
+      We rely on :active states for feedback instead.
+    */
+    -webkit-tap-highlight-color: transparent;
   }
+
+  /* ─── Body ──────────────────────────────────────────────────────────────── */
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    /* Mobile: prevent overscroll bounce */
+
+    /* Prevent rubber-band / overscroll bounce at the page level */
     overscroll-behavior: none;
+
+    /*
+      Smooth font rendering on macOS/iOS — makes thin fonts look crisper
+      on high-DPI screens.
+    */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  /* Safe area insets for notched/bottom-bar devices */
-  #root {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+
+  /* ─── Inputs: prevent iOS auto-zoom ─────────────────────────────────────
+     iOS Safari zooms in when a focused input has font-size < 16px.
+     This single rule prevents that globally without locking out zoom.
+     ────────────────────────────────────────────────────────────────────── */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+
+  /* ─── Interactive elements: remove 300ms tap delay ───────────────────────
+     touch-action: manipulation tells the browser not to wait for a double-tap
+     before firing click. Eliminates the 300ms delay on older mobile browsers.
+     ────────────────────────────────────────────────────────────────────── */
+  button,
+  a,
+  [role='button'],
+  label {
+    touch-action: manipulation;
+  }
+
+  /* ─── Minimum tap target size ────────────────────────────────────────────
+     Apple HIG + WCAG 2.5.5 both recommend 44×44px minimum interactive area.
+     This enforces it on all buttons and links without affecting layout by
+     using min-height / min-width instead of fixed height.
+     ────────────────────────────────────────────────────────────────────── */
+  button,
+  [role='button'] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* ─── Reduced motion ─────────────────────────────────────────────────────
+     Respect the user's OS-level "reduce motion" preference.
+     Collapses all transitions/animations to near-zero without removing
+     them entirely (removes flashes for photosensitive users).
+     ────────────────────────────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ─── Safe-area utility classes ───────────────────────────────────────────────
+   Use these on sticky headers and footers so content clears the notch
+   and the iOS home indicator bar.
+
+   Usage in AppShell:
+     header → pt-safe     (clears the status bar / notch)
+     footer → pb-safe     (clears the home indicator bar)
+
+   Can also combine: e.g. "px-4 pt-safe" on a full-bleed header.
+   ────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .pt-safe  { padding-top:    env(safe-area-inset-top); }
+  .pb-safe  { padding-bottom: env(safe-area-inset-bottom); }
+  .pl-safe  { padding-left:   env(safe-area-inset-left); }
+  .pr-safe  { padding-right:  env(safe-area-inset-right); }
+
+  /* Margin variants — useful for absolutely-positioned elements */
+  .mt-safe  { margin-top:    env(safe-area-inset-top); }
+  .mb-safe  { margin-bottom: env(safe-area-inset-bottom); }
+
+  /* ─── Momentum scroll ─────────────────────────────────────────────────────
+     Apply to any overflow-y-auto container to get native iOS kinetic scrolling.
+     Already the default in modern browsers but explicitly set for older WebKit.
+     ────────────────────────────────────────────────────────────────────── */
+  .scroll-momentum {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* ─── No text selection ──────────────────────────────────────────────────
+     Use on game-board elements where drag/swipe gestures would otherwise
+     accidentally select text.
+     ────────────────────────────────────────────────────────────────────── */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
   }
 }

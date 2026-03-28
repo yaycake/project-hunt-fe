@@ -53,4 +53,17 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    // Expose on local network so phones on the same WiFi can connect.
+    // Vite will print the network URL (e.g. http://192.168.x.x:5173) on startup.
+    host: true,
+    // Forward /api/* to the mock server running on localhost:3001.
+    // The phone never needs to know about port 3001 — it just uses the Vite URL.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
 })
