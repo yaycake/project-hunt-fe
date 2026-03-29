@@ -188,27 +188,26 @@ function GamePage() {
         </div>
       )}
 
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <header className="z-sticky-chrome shrink-0 pt-safe px-4 pb-3 font-rubik font-extrabold">
-        <div className="flex items-center justify-between gap-3 pt-3">
-          <h1
-            className="m-0 max-w-[min(100%,20rem)] shrink-0 text-xl font-extrabold leading-tight tracking-tight text-foreground sm:text-2xl [background-image:none] [background-clip:unset] [-webkit-background-clip:unset] [-webkit-text-fill-color:hsl(var(--foreground))] filter-none"
-          >
-            Project Hunter
-          </h1>
-          <button
-            type="button"
-            onClick={() => setAboutSheetOpen(true)}
-            className="shrink-0 text-sm font-semibold text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline active:opacity-70"
-          >
-            About
-          </button>
-        </div>
-      </header>
+      {/* ── Scrollable content (header scrolls with page) ───────────────── */}
+      <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain scroll-momentum">
+        <header className="px-4 pt-safe pb-3 font-rubik font-extrabold">
+          <div className="flex items-center justify-between gap-3 pt-3">
+            <h1
+              className="m-0 max-w-[min(100%,20rem)] shrink-0 text-xl font-extrabold leading-tight tracking-tight text-foreground sm:text-2xl [background-image:none] [background-clip:unset] [-webkit-background-clip:unset] [-webkit-text-fill-color:hsl(var(--foreground))] filter-none"
+            >
+              Project Hunter
+            </h1>
+            <button
+              type="button"
+              onClick={() => setAboutSheetOpen(true)}
+              className="shrink-0 text-sm font-semibold text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline active:opacity-70"
+            >
+              About
+            </button>
+          </div>
+        </header>
 
-      {/* ── Scrollable content ───────────────────────────────────────────── */}
-      <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain scroll-momentum px-4 py-6 space-y-6">
-
+        <div className="space-y-6 px-4 py-6">
         <GameLobbyOverviewCard
           gameId={gameId}
           game={game}
@@ -376,6 +375,7 @@ function GamePage() {
               Leave game
             </button>
           )}
+        </div>
         </div>
       </main>
 
