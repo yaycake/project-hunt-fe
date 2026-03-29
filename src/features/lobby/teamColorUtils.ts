@@ -59,6 +59,13 @@ export function teamCardBackgroundStyle(teamColorHex: string): CSSProperties {
   }
 }
 
+/** Card outline — darker than the team hue so it reads as a tint, not white. */
+export function teamCardBorderColor(teamColorHex: string): string {
+  const base = canonicalHex(teamColorHex)
+  if (!base) return '#52525b'
+  return shadeDarker(base, 0.38)
+}
+
 /**
  * Tailwind text class for readable labels on saturated team color fills (pills, MY TEAM chip).
  */

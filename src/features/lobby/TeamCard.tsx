@@ -12,7 +12,11 @@ import { LobbyParticipantRow } from '@/features/lobby/LobbyParticipantRow'
 import { ParticipantPermissionStatus } from '@/features/lobby/ParticipantPermissionStatus'
 import { TeamReassignGrip } from '@/features/lobby/TeamReassignDrag'
 import type { TeamReassignDragSession } from '@/features/lobby/TeamReassignDrag'
-import { contrastTextClass, teamCardBackgroundStyle } from '@/features/lobby/teamColorUtils'
+import {
+  contrastTextClass,
+  teamCardBackgroundStyle,
+  teamCardBorderColor,
+} from '@/features/lobby/teamColorUtils'
 import { cn } from '@/lib/utils'
 
 export interface TeamCardProps {
@@ -101,8 +105,9 @@ export function TeamCard({
   return (
     <div
       data-team-drop={team.id}
+      style={{ borderColor: teamCardBorderColor(team.color) }}
       className={cn(
-        'rounded-2xl border-2 border-white/90 overflow-hidden transition-[box-shadow,transform,opacity] duration-200 ease-out',
+        'rounded-2xl border-[3px] border-solid overflow-hidden transition-[box-shadow,transform,opacity] duration-200 ease-out',
         isFlashed &&
           'ring-2 ring-primary/55 ring-offset-2 ring-offset-background dark:ring-offset-zinc-950',
         isSourceTeam &&
@@ -123,34 +128,67 @@ export function TeamCard({
         <div className="px-4 py-3 sm:py-3.5" style={{ backgroundColor: team.color }}>
           <div className={cn(headerTextClass)}>
             {isEditingThis ? (
-              <div className="flex items-center gap-2">
-                <input
-                  autoFocus
-                  value={editingName}
-                  onChange={e => onEditingNameChange(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') onCommitEdit()
-                    if (e.key === 'Escape') onCancelEdit()
-                  }}
-                  className="min-w-0 flex-1 rounded-lg border border-ring bg-white px-3 py-1.5 text-sm font-semibold text-zinc-900"
-                  aria-label="Team name"
-                />
-                <button
-                  type="button"
-                  onClick={onCommitEdit}
-                  aria-label="Save team name"
-                  className="shrink-0 text-emerald-500 drop-shadow-sm active:opacity-70"
-                >
-                  <Check className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={onCancelEdit}
-                  aria-label="Cancel"
-                  className="shrink-0 opacity-85 active:opacity-60"
-                >
-                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </button>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    value={editingName}
+                    onChange={e => onEditingNameChange(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') onCommitEdit()
+                      if (e.key === 'Escape') onCancelEdit()
+                    }}
+                    className="min-w-0 flex-1 rounded-lg border border-ring bg-white px-3 py-1.5 text-sm font-semibold text-zinc-900"
+                    aria-label="Team name"
+                  />
+                  <button
+                    type="button"
+                    onClick={onCommitEdit}
+                    aria-label="Save team name"
+                    className="shrink-0 text-emerald-500 drop-shadow-sm active:opacity-70"
+                  >
+                    <Check className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onCancelEdit}
+                    aria-label="Cancel"
+                    className="shrink-0 opacity-85 active:opacity-60"
+                  >
+                    <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </button>
+                </div>
+                {canEditTeamColor && (
+                  <div
+                    className="flex max-w-full flex-wrap content-center gap-1.5 touch-manipulation"
+                    role="group"
+                    aria-label="Team color"
+                  >
+                    {TEAM_COLORS.map(c => {
+                      const selected = teamColorKey === c.hex.toLowerCase()
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          title={c.label}
+                          aria-label={`Set team color to ${c.label}`}
+                          aria-pressed={selected}
+                          disabled={isUpdatingTeam}
+                          onClick={() => onUpdateTeamColor(c.hex)}
+                          className={cn(
+                            'tap-target-compact relative z-[1] h-5 w-5 shrink-0 rounded-full p-0',
+                            'transition-opacity duration-150 hover:opacity-90 disabled:opacity-50',
+                            'shadow-sm',
+                            selected
+                              ? 'ring-2 ring-foreground/45 ring-offset-1 ring-offset-transparent'
+                              : 'ring-1 ring-black/12 dark:ring-white/18',
+                          )}
+                          style={{ backgroundColor: c.hex }}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex min-h-[40px] flex-wrap items-center gap-x-3 gap-y-2">
@@ -213,38 +251,6 @@ export function TeamCard({
       )}
 
       <div className="space-y-3 p-4" style={teamCardBackgroundStyle(team.color)}>
-        {isEditingThis && canEditTeamColor && (
-          <div
-            className="flex max-w-full flex-wrap content-center gap-1.5 rounded-lg border border-border/40 bg-background/60 px-2 py-1.5 touch-manipulation"
-            role="group"
-            aria-label="Team color"
-          >
-            {TEAM_COLORS.map(c => {
-              const selected = teamColorKey === c.hex.toLowerCase()
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  title={c.label}
-                  aria-label={`Set team color to ${c.label}`}
-                  aria-pressed={selected}
-                  disabled={isUpdatingTeam}
-                  onClick={() => onUpdateTeamColor(c.hex)}
-                  className={cn(
-                    'tap-target-compact relative z-[1] h-5 w-5 shrink-0 rounded-full p-0',
-                    'transition-opacity duration-150 hover:opacity-90 disabled:opacity-50',
-                    'shadow-sm',
-                    selected
-                      ? 'ring-2 ring-foreground/45 ring-offset-1 ring-offset-background dark:ring-offset-zinc-950'
-                      : 'ring-1 ring-black/12 dark:ring-white/18',
-                  )}
-                  style={{ backgroundColor: c.hex }}
-                />
-              )
-            })}
-          </div>
-        )}
-
         {isConfirmingDelete && (
           <div className="flex min-h-[36px] w-full flex-1 items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">

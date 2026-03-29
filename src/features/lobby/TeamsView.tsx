@@ -220,7 +220,7 @@ export function TeamsView({
               onClick={() => setShowAddTeam(true)}
               disabled={teamReassign.isDragging}
               className={cn(
-                'flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3.5 text-sm font-medium text-muted-foreground transition active:opacity-60',
+                'flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-user-tile py-3.5 text-sm font-medium text-muted-foreground transition active:opacity-60',
                 teamReassign.isDragging && 'pointer-events-none opacity-40',
               )}
             >

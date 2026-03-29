@@ -19,6 +19,18 @@ const MAX_DIAL_HOURS = 12
 /** Bump `v` when replacing `public/images/game-card-bg.svg` so caches fetch the new file. */
 const GAME_CARD_BG_URL = '/images/game-card-bg.svg?v=3'
 
+/** Outline for gradient game name — stacked drop-shadows, 0 blur, 1px (primary-foreground ≈ white). */
+const GAME_NAME_TITLE_STROKE_FILTER = [
+  'drop-shadow(-1px -1px 0 hsl(var(--primary-foreground)))',
+  'drop-shadow(1px -1px 0 hsl(var(--primary-foreground)))',
+  'drop-shadow(-1px 1px 0 hsl(var(--primary-foreground)))',
+  'drop-shadow(1px 1px 0 hsl(var(--primary-foreground)))',
+  'drop-shadow(0 -1px 0 hsl(var(--primary-foreground)))',
+  'drop-shadow(0 1px 0 hsl(var(--primary-foreground)))',
+  'drop-shadow(-1px 0 0 hsl(var(--primary-foreground)))',
+  'drop-shadow(1px 0 0 hsl(var(--primary-foreground)))',
+].join(' ')
+
 /** Viewport-center offset → px; background moves opposite to content for depth. */
 const CARD_PARALLAX_BG_MULT = -0.055
 const CARD_PARALLAX_FG_MULT = 0.028
@@ -297,7 +309,12 @@ export function GameLobbyOverviewCard({
       />
       <div ref={cardContentRef} className="relative z-10 p-4 sm:p-5 will-change-transform">
         <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xl leading-tight tracking-tight sm:text-2xl">
-          <h1 className="min-w-0 truncate">{game.name}</h1>
+          <h2
+            className="inline-block max-w-full min-w-0 truncate bg-gradient-to-b from-[#b7ff60] to-[#0e9f65] bg-clip-text text-transparent [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+            style={{ filter: GAME_NAME_TITLE_STROKE_FILTER }}
+          >
+            {game.name}
+          </h2>
           <span className="shrink-0 whitespace-nowrap font-rubik font-extrabold text-white">
             Game Setup
           </span>
@@ -507,11 +524,11 @@ function LobbyCardInviteGameIdRow({
         >
           Invite users
         </button>
-        <div className="flex min-w-0 flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:border-l sm:border-white/25 sm:pl-4 sm:pr-4">
-          <p className="min-w-0 truncate font-rubik text-2xl font-extrabold leading-tight tracking-[3px] tabular-nums text-foreground sm:text-3xl">
+        <div className="flex min-w-0 flex-row items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:border-l sm:border-white/25 sm:pl-4 sm:pr-4">
+          <p className="min-w-0 flex-1 truncate font-rubik text-2xl font-extrabold leading-tight tracking-[3px] tabular-nums text-foreground sm:text-3xl">
             {gameId}
           </p>
-          <div className="flex shrink-0 items-center gap-2 sm:justify-end">
+          <div className="flex shrink-0 items-center gap-2">
             <LobbyCardCopyGameIdButton gameId={gameId} />
             <button
               type="button"
