@@ -96,6 +96,18 @@
     /* Positive / granted states (permissions, copy confirmation) */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
+    /* Brand greens — headings, stat pills; single source for CSS + Tailwind arbitrary stops */
+    --brand-heading-gradient-from: #b7ff60;
+    --brand-heading-gradient-to: #0e9f65;
+    --brand-badge-gradient-from: #82cf25;
+    --brand-badge-gradient-to: #086d44;
+    /* Primary CTA label on `button-bg.svg` — single source (avoid #000 in components) */
+    --primary-cta-label: #000000;
+    /* CircularHourDial selected arc — stroke + glow share RGB */
+    --dial-selected-stroke: #ffd904;
+    --dial-selected-rgb: 255 217 4;
+    /* Participant row tiles — aligned to ~zinc neutrals, themeable per mode */
+    --user-tile-bg: 0 0% 90.6%;
   }
 
   .dark {
@@ -120,19 +132,19 @@
     --ring: 212 95% 54%;
     --success: 142 69% 58%;
     --success-foreground: 0 0% 98%;
+    --user-tile-bg: 0 0% 16.5%;
   }
 }
 
 @layer components {
-  /** Lobby user / participant rows — solid neutrals; page theme handles dark elsewhere. */
+  /** Lobby user / participant rows — uses --user-tile-bg; dark border via primary-foreground alpha */
   .bg-user-tile {
-    background-color: #e7e7e7;
+    background-color: hsl(var(--user-tile-bg));
   }
   .dark .bg-user-tile {
-    background-color: #2a2a2a;
     border-width: 2px;
     border-style: solid;
-    border-color: rgb(255 255 255 / 0.22);
+    border-color: hsl(var(--primary-foreground) / 0.22);
   }
 }
 
@@ -228,7 +240,11 @@
     max-width: 100%;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
-    background-image: linear-gradient(180deg, #b7ff60 0%, #0e9f65 100%);
+    background-image: linear-gradient(
+      180deg,
+      var(--brand-heading-gradient-from) 0%,
+      var(--brand-heading-gradient-to) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -377,8 +393,8 @@
     font-family: var(--font-rubik) !important;
     font-weight: 600 !important;
     background-color: transparent !important;
-    color: #000 !important;
-    -webkit-text-fill-color: #000 !important;
+    color: var(--primary-cta-label) !important;
+    -webkit-text-fill-color: var(--primary-cta-label) !important;
     text-shadow: none;
     outline: 2px solid hsl(var(--primary-foreground));
     outline-offset: -2px;
@@ -398,6 +414,15 @@
     background-position: center;
     background-repeat: no-repeat;
     pointer-events: none;
+  }
+
+  /** CircularHourDial — selected arc stroke + glow from theme tokens */
+  .dial-selected-arc {
+    stroke: var(--dial-selected-stroke);
+    filter:
+      drop-shadow(0 0 2px rgb(var(--dial-selected-rgb) / 1))
+      drop-shadow(0 0 8px rgb(var(--dial-selected-rgb) / 0.65))
+      drop-shadow(0 0 14px rgb(var(--dial-selected-rgb) / 0.35));
   }
 }
 
@@ -440,8 +465,9 @@
   }
 
   /*
-    Stacking map (low → high). Adjust here for global redesigns; avoid ad-hoc z-[…] in components.
+    Stacking map (low → high). Adjust here for global redesigns; prefer z-local / named tiers over z-[…].
 
+    1   z-local — within-card lift (focus ring, color swatch above row)
     40  Sticky chrome (AppShell header/footer, game page header)
     50  Transient banners; default bottom sheets (create teams)
     90  Teams “Add team” sheet (stays under lobby-level UI)
@@ -451,6 +477,9 @@
     118 Team row elevated while a card is being dragged
     125 Team-reassign floating ghost card
   */
+  .z-local {
+    z-index: 1;
+  }
   .z-sticky-chrome {
     z-index: 40;
   }

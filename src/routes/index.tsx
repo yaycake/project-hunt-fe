@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 import { createGame, joinGame } from '@/lib/mock'
-import { cn } from '@/lib/utils'
 
 /** Fallback if the player leaves “Name this game” empty. */
 const DEFAULT_NEW_GAME_NAME = 'New Game'
@@ -10,15 +12,6 @@ const DEFAULT_NEW_GAME_NAME = 'New Game'
 export const Route = createFileRoute('/')({
   component: HomePage,
 })
-
-const inputClass =
-  'w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/60'
-
-const primaryCtaClass =
-  'flex w-full items-center justify-center rounded-xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground transition disabled:pointer-events-none disabled:opacity-40 active:opacity-80'
-
-const secondaryCtaClass =
-  'flex w-full items-center justify-center rounded-xl border border-border px-4 py-4 text-base font-semibold transition active:opacity-60 disabled:pointer-events-none disabled:opacity-40'
 
 function HomePage() {
   const navigate = useNavigate()
@@ -95,15 +88,13 @@ function HomePage() {
           <label htmlFor="home-username" className="text-sm">
             Your name
           </label>
-          <input
+          <Input
             id="home-username"
-            type="text"
             name="username"
             autoComplete="nickname"
             placeholder="e.g. Alex"
             value={username}
             onChange={e => setUsername(e.target.value)}
-            className={inputClass}
           />
         </div>
 
@@ -120,15 +111,13 @@ function HomePage() {
                 <label htmlFor="home-game-title" className="text-sm">
                   Name this game
                 </label>
-                <input
+                <Input
                   id="home-game-title"
-                  type="text"
                   name="gameTitle"
                   autoComplete="off"
                   placeholder="e.g. Summer Hunt 2026"
                   value={gameTitle}
                   onChange={e => setGameTitle(e.target.value)}
-                  className={inputClass}
                 />
               </>
             ) : (
@@ -136,10 +125,9 @@ function HomePage() {
                 <label htmlFor="home-game-id" className="text-sm">
                   Game ID
                 </label>
-                <input
+                <Input
                   ref={gameIdInputRef}
                   id="home-game-id"
-                  type="text"
                   inputMode="text"
                   autoCapitalize="characters"
                   autoComplete="off"
@@ -148,10 +136,7 @@ function HomePage() {
                   maxLength={6}
                   value={gameCode}
                   onChange={e => setGameCode(e.target.value.toUpperCase())}
-                  className={cn(
-                    inputClass,
-                    'font-mono text-lg tracking-widest placeholder:tracking-widest placeholder:text-muted-foreground/40',
-                  )}
+                  className="font-mono text-lg tracking-widest placeholder:tracking-widest placeholder:text-muted-foreground/40"
                 />
               </>
             )}
@@ -160,40 +145,41 @@ function HomePage() {
           {/* Slot 2: Start a Game ↔ Join game (primary) */}
           <div className="flex min-h-[3.25rem] items-center">
             {flow === 'pick' ? (
-              <button
+              <PrimaryButton
                 type="button"
+                size="lg"
                 disabled={!canStart}
                 onClick={startGame}
-                className={primaryCtaClass}
               >
                 {isCreating ? 'Starting…' : 'Start a Game'}
-              </button>
+              </PrimaryButton>
             ) : (
-              <button
+              <PrimaryButton
                 type="button"
+                size="lg"
                 disabled={!canSubmitJoin}
                 onClick={submitJoin}
-                className={primaryCtaClass}
               >
                 {isJoining ? 'Joining…' : 'Join game'}
-              </button>
+              </PrimaryButton>
             )}
           </div>
 
           {/* Slot 3: Join a Game (secondary) ↔ Back (text) — reserved height matches */}
           <div className="flex min-h-[3.25rem] items-center justify-center">
             {flow === 'pick' ? (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="lg"
                 disabled={isCreating}
                 onClick={() => {
                   resetJoinError()
                   setFlow('join')
                 }}
-                className={secondaryCtaClass}
               >
                 Join a Game
-              </button>
+              </Button>
             ) : (
               <button
                 type="button"

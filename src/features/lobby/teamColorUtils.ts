@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { NEUTRAL_HEX } from '@/lib/theme/neutralHex'
 
 function parseRgb(hex: string): { r: number; g: number; b: number } | null {
   const h = hex.replace('#', '').trim()
@@ -21,7 +22,7 @@ function toHex(r: number, g: number, b: number): string {
 /** Lighter tint (toward white) — top of team card gradient. */
 function tintLighter(hex: string, towardWhite: number): string {
   const rgb = parseRgb(hex)
-  if (!rgb) return '#f4f4f5'
+  if (!rgb) return NEUTRAL_HEX.zinc100
   const t = towardWhite
   return toHex(
     rgb.r + (255 - rgb.r) * t,
@@ -33,7 +34,7 @@ function tintLighter(hex: string, towardWhite: number): string {
 /** Darker shade (toward black) — bottom of team card gradient. */
 function shadeDarker(hex: string, towardBlack: number): string {
   const rgb = parseRgb(hex)
-  if (!rgb) return '#3f3f46'
+  if (!rgb) return NEUTRAL_HEX.zinc700
   const t = towardBlack
   return toHex(rgb.r * (1 - t), rgb.g * (1 - t), rgb.b * (1 - t))
 }
@@ -50,7 +51,7 @@ function canonicalHex(hex: string): string | null {
  * deep shade at bottom — less white/black mixing than before so it stays vivid, not muddy.
  */
 export function teamCardBackgroundStyle(teamColorHex: string): CSSProperties {
-  const mid = canonicalHex(teamColorHex) ?? '#71717a'
+  const mid = canonicalHex(teamColorHex) ?? NEUTRAL_HEX.zinc500
   // Less dilution with white/black keeps saturation up; mid-stop adds a punch of pure hue.
   const top = tintLighter(teamColorHex, 0.26)
   const bottom = shadeDarker(teamColorHex, 0.52)
@@ -62,7 +63,7 @@ export function teamCardBackgroundStyle(teamColorHex: string): CSSProperties {
 /** Card outline — darker than the team hue so it reads as a tint, not white. */
 export function teamCardBorderColor(teamColorHex: string): string {
   const base = canonicalHex(teamColorHex)
-  if (!base) return '#52525b'
+  if (!base) return NEUTRAL_HEX.zinc600
   return shadeDarker(base, 0.38)
 }
 

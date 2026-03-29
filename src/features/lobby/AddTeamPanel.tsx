@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
+import { IconButton } from '@/components/ui/IconButton'
+import { Input } from '@/components/ui/Input'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 import { addTeam, TEAM_COLORS, type MockTeam } from '@/lib/mock'
 
 function normHex(hex: string) {
@@ -48,14 +51,15 @@ export function AddTeamPanel({ gameId, existingTeams, actorId, onClose }: Props)
     <div className="rounded-2xl border border-border bg-background p-5 space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-base">Add team</h3>
-        <button
+        <IconButton
           type="button"
+          variant="ghost"
           onClick={onClose}
           aria-label="Close"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:opacity-60 sm:h-8 sm:w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
         >
           <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        </button>
+        </IconButton>
       </div>
 
       <p className="text-sm text-muted-foreground leading-relaxed">
@@ -65,12 +69,11 @@ export function AddTeamPanel({ gameId, existingTeams, actorId, onClose }: Props)
 
       <div className="space-y-2.5">
         <p className="text-xs font-medium text-muted-foreground">Team name</p>
-        <input
-          type="text"
+        <Input
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder={`Team ${nextIndex}`}
-          className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/50"
+          className="placeholder:text-muted-foreground/50"
         />
 
         <p className="pt-2 text-xs font-medium text-muted-foreground">Team color</p>
@@ -104,14 +107,13 @@ export function AddTeamPanel({ gameId, existingTeams, actorId, onClose }: Props)
         </p>
       )}
 
-      <button
+      <PrimaryButton
         type="button"
         onClick={() => isValid && mutate()}
         disabled={!isValid || isPending}
-        className="w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition disabled:opacity-40 active:opacity-80"
       >
         {isPending ? 'Adding…' : 'Add team'}
-      </button>
+      </PrimaryButton>
     </div>
   )
 }

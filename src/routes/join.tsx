@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { ChevronLeft } from 'lucide-react'
+import { Input } from '@/components/ui/Input'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 import { joinGame } from '@/lib/mock'
 import { z } from 'zod'
 
@@ -65,8 +67,7 @@ function JoinGamePage() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
         <Field label="Game code" error={errors.gameCode}>
-          <input
-            type="text"
+          <Input
             placeholder="e.g. A4K9PZ"
             value={gameCode}
             onChange={(e) => setGameCode(e.target.value.toUpperCase())}
@@ -74,18 +75,16 @@ function JoinGamePage() {
             autoCapitalize="characters"
             autoComplete="off"
             spellCheck={false}
-            className="w-full rounded-xl border border-border bg-white px-4 py-3 font-mono text-lg tracking-widest transition placeholder:text-muted-foreground/40 placeholder:tracking-widest"
+            className="font-mono text-lg tracking-widest placeholder:text-muted-foreground/40 placeholder:tracking-widest"
           />
         </Field>
 
         <Field label="Your name" error={errors.username}>
-          <input
-            type="text"
+          <Input
             placeholder="e.g. Alex"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="nickname"
-            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/60"
           />
         </Field>
 
@@ -101,13 +100,14 @@ function JoinGamePage() {
           </div>
         )}
 
-        <button
+        <PrimaryButton
           type="submit"
+          size="lg"
           disabled={isPending}
-          className="mt-2 flex w-full items-center justify-center rounded-xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground transition disabled:opacity-50 active:opacity-80"
+          className="mt-2"
         >
           {isPending ? 'Joining…' : 'Join Game'}
-        </button>
+        </PrimaryButton>
       </form>
     </main>
   )

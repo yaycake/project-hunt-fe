@@ -1,5 +1,5 @@
 import { type HTMLAttributes } from 'react'
-import { ChevronsDown, ChevronsUp, Crown, Pencil, Trash2, Check, X } from 'lucide-react'
+import { ChevronsDown, ChevronsUp, Pencil, UserStar, Trash2, Check, X } from 'lucide-react'
 import {
   TEAM_COLORS,
   type MockGame,
@@ -17,6 +17,7 @@ import {
   teamCardBackgroundStyle,
   teamCardBorderColor,
 } from '@/features/lobby/teamColorUtils'
+import { UserTile } from '@/components/ui/UserTile'
 import { cn } from '@/lib/utils'
 
 export interface TeamCardProps {
@@ -71,7 +72,6 @@ export function TeamCard({
   members,
   currentUser,
   isOwner,
-  me,
   isMine,
   isEditingThis,
   isConfirmingDelete,
@@ -113,7 +113,7 @@ export function TeamCard({
         isSourceTeam &&
           'ring-1 ring-dashed ring-muted-foreground/50 ring-inset bg-muted/20 dark:bg-zinc-900/60',
         isDropHover &&
-          'z-[1] scale-[1.01] ring-2 ring-dashed ring-primary bg-primary/[0.07] shadow-md dark:bg-primary/10',
+          'z-local scale-[1.01] ring-2 ring-dashed ring-primary bg-primary/[0.07] shadow-md dark:bg-primary/10',
         dragActive && !isSourceTeam && !isDropHover && 'opacity-[0.88]',
       )}
     >
@@ -176,7 +176,7 @@ export function TeamCard({
                           disabled={isUpdatingTeam}
                           onClick={() => onUpdateTeamColor(c.hex)}
                           className={cn(
-                            'tap-target-compact relative z-[1] h-5 w-5 shrink-0 rounded-full p-0',
+                            'tap-target-compact relative z-local h-5 w-5 shrink-0 rounded-full p-0',
                             'transition-opacity duration-150 hover:opacity-90 disabled:opacity-50',
                             'shadow-sm',
                             selected
@@ -324,9 +324,8 @@ export function TeamCard({
 
               return (
                 <li key={p.id} className={cn(hideForDrag && 'hidden')}>
-                  <div
+                  <UserTile
                     className={cn(
-                      'overflow-hidden rounded-xl border border-border bg-user-tile',
                       showMove && 'touch-none select-none',
                       isSourcePlayerRow &&
                         'border-dashed border-muted-foreground/35 opacity-[0.42]',
@@ -353,7 +352,7 @@ export function TeamCard({
                             <span className="min-w-0 truncate text-sm font-medium">{p.username}</span>
                             {isGameOwner && (
                               <span data-team-reassign-no-drag="" className="inline-flex">
-                                <Crown className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />
+                                <UserStar className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />
                               </span>
                             )}
                             {ownerInline}
@@ -362,7 +361,7 @@ export function TeamCard({
                         badges={<ParticipantPermissionStatus participant={p} className="shrink-0" />}
                       />
                     )}
-                  </div>
+                  </UserTile>
                 </li>
               )
             })}

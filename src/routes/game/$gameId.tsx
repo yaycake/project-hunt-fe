@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query'
-import { Crown, LogOut, Users, X, Trash2 } from 'lucide-react'
+import { LogOut, UserStar, Users, X, Trash2 } from 'lucide-react'
 import {
   getGame,
   startGame,
@@ -21,8 +21,11 @@ import {
 } from '@/features/lobby/LobbyParticipantRow'
 import { ParticipantPermissionStatus } from '@/features/lobby/ParticipantPermissionStatus'
 import { BottomSheet } from '@/components/ui/BottomSheet'
+import { IconButton } from '@/components/ui/IconButton'
+import { userTileClassName } from '@/components/ui/UserTile'
 import { TeamsView } from '@/features/lobby/TeamsView'
 import { markPermissionsGateShown, isPermissionsGateMarkedShown } from '@/features/lobby/permissionsGateStorage'
+import { cn } from '@/lib/utils'
 export const Route = createFileRoute('/game/$gameId')({
   component: GamePage,
 })
@@ -253,10 +256,7 @@ function GamePage() {
                 const canRemove = isOwner && !isMe && !isGameOwner
                 const isConfirming = confirmRemoveId === p.id
                 return (
-                  <li
-                    key={p.id}
-                    className="overflow-hidden rounded-xl border border-border bg-user-tile"
-                  >
+                  <li key={p.id} className={userTileClassName}>
                     {/* Player row */}
                     {isMe ? (
                       <div className="px-4 py-3">
@@ -276,17 +276,18 @@ function GamePage() {
                           <>
                             <span className="min-w-0 truncate text-sm font-medium">{p.username}</span>
                             {isGameOwner && (
-                              <Crown className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />
+                              <UserStar className="h-4 w-4 shrink-0 text-amber-400" aria-hidden />
                             )}
                             {canRemove && (
-                              <button
+                              <IconButton
                                 type="button"
-                                onClick={() => setConfirmRemoveId(isConfirming ? null : p.id)}
+                                variant="default"
                                 aria-label="Remove player"
-                                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground/50 active:opacity-60 sm:h-8 sm:w-8"
+                                onClick={() => setConfirmRemoveId(isConfirming ? null : p.id)}
+                                className="h-7 w-7 text-muted-foreground/50 sm:h-8 sm:w-8"
                               >
                                 <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                              </button>
+                              </IconButton>
                             )}
                           </>
                         }
@@ -315,8 +316,12 @@ function GamePage() {
             {/* Create Teams button — owner only, no teams yet */}
             {isOwner && (
               <button
+                type="button"
                 onClick={() => setShowCreateTeams(true)}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3.5 text-sm font-medium text-muted-foreground transition active:opacity-60"
+                className={cn(
+                  userTileClassName,
+                  'mt-2 flex w-full items-center justify-center gap-2 border-dashed py-3.5 text-sm font-medium text-muted-foreground transition active:opacity-60',
+                )}
               >
                 <Users className="h-4 w-4" />
                 Create Teams
