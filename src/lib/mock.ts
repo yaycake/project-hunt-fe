@@ -26,14 +26,14 @@ function uuid(): string {
 // ─── Colour palette (UI only — not stored server-side as a fixed list) ────────
 
 export const TEAM_COLORS = [
-  { id: 'red',    label: 'Red',    hex: '#ef4444' },
-  { id: 'orange', label: 'Orange', hex: '#f97316' },
-  { id: 'yellow', label: 'Yellow', hex: '#eab308' },
-  { id: 'green',  label: 'Green',  hex: '#22c55e' },
-  { id: 'teal',   label: 'Teal',   hex: '#14b8a6' },
+  { id: 'sky',    label: 'Sky',    hex: '#468FED' },
+  { id: 'orange', label: 'Orange', hex: '#FF6200' },
+  { id: 'yellow', label: 'Yellow', hex: '#FFD000' },
+  { id: 'green',  label: 'Green',  hex: '#C2E812' },
+  { id: 'teal',   label: 'Teal',   hex: '#01F181' },
   { id: 'blue',   label: 'Blue',   hex: '#3b82f6' },
-  { id: 'purple', label: 'Purple', hex: '#a855f7' },
-  { id: 'pink',   label: 'Pink',   hex: '#ec4899' },
+  { id: 'purple', label: 'Purple', hex: '#6320EE' },
+  { id: 'pink',   label: 'Pink',   hex: '#DC0490' },
 ] as const
 
 // ─── Types ────────────────────────────────────────────────────────────────────

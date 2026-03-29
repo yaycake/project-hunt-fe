@@ -224,6 +224,7 @@ function GamePage() {
           isOwner={isOwner}
           actorId={currentUser!.id}
           onOpenInviteSheet={() => setInviteSheetOpen(true)}
+          onOpenCreateTeamsSheet={() => setShowCreateTeams(true)}
           startGame={
             isOwner && game.status === 'LOBBY'
               ? {
@@ -263,7 +264,7 @@ function GamePage() {
                 return (
                   <li
                     key={p.id}
-                    className="overflow-hidden rounded-xl border border-border bg-secondary/30"
+                    className="overflow-hidden rounded-xl border border-border bg-user-tile"
                   >
                     {/* Player row */}
                     {isMe ? (

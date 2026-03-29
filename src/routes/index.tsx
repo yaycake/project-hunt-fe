@@ -12,7 +12,7 @@ export const Route = createFileRoute('/')({
 })
 
 const inputClass =
-  'w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground/60'
+  'w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/60'
 
 const primaryCtaClass =
   'flex w-full items-center justify-center rounded-xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground transition disabled:pointer-events-none disabled:opacity-40 active:opacity-80'
@@ -92,7 +92,7 @@ function HomePage() {
 
       <div className="flex w-full max-w-xs flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="home-username" className="text-sm font-medium">
+          <label htmlFor="home-username" className="text-sm">
             Your name
           </label>
           <input
@@ -117,7 +117,7 @@ function HomePage() {
           <div className="flex min-h-[5.5rem] flex-col justify-center gap-1.5">
             {flow === 'pick' ? (
               <>
-                <label htmlFor="home-game-title" className="text-sm font-medium">
+                <label htmlFor="home-game-title" className="text-sm">
                   Name this game
                 </label>
                 <input
@@ -133,7 +133,7 @@ function HomePage() {
               </>
             ) : (
               <>
-                <label htmlFor="home-game-id" className="text-sm font-medium">
+                <label htmlFor="home-game-id" className="text-sm">
                   Game ID
                 </label>
                 <input

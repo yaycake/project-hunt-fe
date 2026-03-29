@@ -113,7 +113,7 @@ export function LobbySelfTile({
                 }
               }}
               disabled={savingName}
-              className="min-w-0 flex-1 rounded-lg border border-ring bg-secondary px-3 py-1.5 text-sm font-medium outline-none"
+              className="min-w-0 flex-1 rounded-lg border border-ring bg-white px-3 py-1.5 text-sm font-medium"
               aria-label="Your display name"
             />
             <button

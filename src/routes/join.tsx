@@ -74,7 +74,7 @@ function JoinGamePage() {
             autoCapitalize="characters"
             autoComplete="off"
             spellCheck={false}
-            className="w-full rounded-xl border border-border bg-secondary px-4 py-3 font-mono text-lg tracking-widest outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground/40 placeholder:tracking-widest"
+            className="w-full rounded-xl border border-border bg-white px-4 py-3 font-mono text-lg tracking-widest transition placeholder:text-muted-foreground/40 placeholder:tracking-widest"
           />
         </Field>
 
@@ -85,7 +85,7 @@ function JoinGamePage() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="nickname"
-            className="w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground/60"
+            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/60"
           />
         </Field>
 
@@ -124,7 +124,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-sm">{label}</label>
       {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>

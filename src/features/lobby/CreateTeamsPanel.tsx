@@ -133,7 +133,7 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
               value={draft.name}
               onChange={e => setName(i, e.target.value)}
               placeholder={`Team ${i + 1}`}
-              className="w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground/50"
+              className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/50"
             />
 
             {/* Colour swatches */}
