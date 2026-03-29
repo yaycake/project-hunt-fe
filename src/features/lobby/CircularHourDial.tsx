@@ -90,8 +90,15 @@ export interface CircularHourDialProps {
 const trackBase =
   'fill-none transition-[stroke] duration-150 [stroke-linejoin:round] [stroke-linecap:round]'
 
+/** Selected time span — bright yellow + soft outer glow. */
+const SELECTED_STROKE = '#FFD904'
+const selectedRingGlowStyle = {
+  filter:
+    'drop-shadow(0 0 2px rgba(255, 217, 4, 1)) drop-shadow(0 0 8px rgba(255, 217, 4, 0.65)) drop-shadow(0 0 14px rgba(255, 217, 4, 0.35))',
+} as const
+
 /**
- * 12-hour ring: selected span is one continuous rounded blue arc; remaining hours are segmented
+ * 12-hour ring: selected span is one continuous rounded arc; remaining hours are segmented
  * translucent gray. Center is open (no hole fill) so the card shows through.
  */
 export function CircularHourDial({
@@ -204,7 +211,7 @@ export function CircularHourDial({
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VIEW} ${VIEW}`}
-          className="h-auto w-full touch-none select-none"
+          className="h-auto w-full touch-none select-none overflow-visible"
           role="slider"
           aria-label={ariaLabel}
           aria-valuemin={minHours}
@@ -231,22 +238,26 @@ export function CircularHourDial({
             />
           ))}
 
-          {/* Selected hours: one continuous blue arc */}
+          {/* Selected hours: one continuous yellow arc + glow */}
           {clamped >= 12 ? (
             <circle
               cx={CX}
               cy={CY}
               r={R_MID}
               fill="none"
-              className={cn(trackBase, 'stroke-primary')}
+              className={trackBase}
+              stroke={SELECTED_STROKE}
               strokeWidth={STROKE}
+              style={selectedRingGlowStyle}
             />
           ) : (
             selectedPathD && (
               <path
                 d={selectedPathD}
-                className={cn(trackBase, 'stroke-primary')}
+                className={trackBase}
+                stroke={SELECTED_STROKE}
                 strokeWidth={STROKE}
+                style={selectedRingGlowStyle}
               />
             )
           )}

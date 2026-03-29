@@ -72,7 +72,7 @@ export function ParticipantPermissionStatus({ participant, className, selfPermis
 
       {sheetOpen && (
         <PermissionSheet onClose={() => setSheetOpen(false)}>
-          <h2 className="pr-10 text-center text-lg font-semibold leading-tight">Permissions</h2>
+          <h2 className="pr-10 text-center text-lg leading-tight">Permissions</h2>
           <p className="mt-1 text-center text-xs text-muted-foreground">
             Location and alerts for this game
           </p>
@@ -85,7 +85,7 @@ export function ParticipantPermissionStatus({ participant, className, selfPermis
                 ) : (
                   <MapPinOff className={cn('h-5 w-5 shrink-0', iconDim)} aria-hidden />
                 )}
-                <h3 id="perm-location-heading" className="text-base font-semibold">
+                <h3 id="perm-location-heading" className="text-base">
                   Location
                 </h3>
               </div>
@@ -145,7 +145,7 @@ export function ParticipantPermissionStatus({ participant, className, selfPermis
                   ) : (
                     <BellOff className={cn('h-5 w-5 shrink-0', iconDim)} aria-hidden />
                   )}
-                  <h3 id="perm-notif-heading" className="text-base font-semibold">
+                  <h3 id="perm-notif-heading" className="text-base">
                     Notifications
                   </h3>
                 </div>

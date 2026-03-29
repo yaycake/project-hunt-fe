@@ -58,7 +58,7 @@ function CreateGamePage() {
 
       {/* Header */}
       <div className="mb-8 space-y-1">
-        <h1 className="text-2xl font-bold">Start a Game</h1>
+        <h1 className="text-2xl">Start a Game</h1>
         <p className="text-sm text-muted-foreground">
           You'll be the game owner and can invite others with a link.
         </p>
@@ -73,7 +73,7 @@ function CreateGamePage() {
             value={gameName}
             onChange={(e) => setGameName(e.target.value)}
             autoComplete="off"
-            className="w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground/60"
+            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/60"
           />
         </Field>
 
@@ -84,7 +84,7 @@ function CreateGamePage() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="nickname"
-            className="w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground/60"
+            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/60"
           />
         </Field>
 
@@ -118,7 +118,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-sm">{label}</label>
       {children}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>

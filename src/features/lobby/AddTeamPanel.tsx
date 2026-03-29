@@ -47,7 +47,7 @@ export function AddTeamPanel({ gameId, existingTeams, actorId, onClose }: Props)
   return (
     <div className="rounded-2xl border border-border bg-background p-5 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Add team</h3>
+        <h3 className="text-base">Add team</h3>
         <button
           type="button"
           onClick={onClose}
@@ -70,7 +70,7 @@ export function AddTeamPanel({ gameId, existingTeams, actorId, onClose }: Props)
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder={`Team ${nextIndex}`}
-          className="w-full rounded-xl border border-border bg-secondary px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground/50"
+          className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/50"
         />
 
         <p className="pt-2 text-xs font-medium text-muted-foreground">Team color</p>

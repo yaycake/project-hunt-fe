@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query'
-import { Check, Copy, Crown, UserPlus, Users, X, Trash2 } from 'lucide-react'
+import { Crown, LogOut, Users, X, Trash2 } from 'lucide-react'
 import {
   getGame,
   startGame,
@@ -43,6 +43,7 @@ function GamePage() {
     () => !isPermissionsGateMarkedShown(),
   )
   const [inviteSheetOpen, setInviteSheetOpen] = useState(false)
+  const [aboutSheetOpen, setAboutSheetOpen] = useState(false)
 
   // ── Team-change detection ─────────────────────────────────────────────────
   // prevTeamIdRef: null = first load (skip comparison), string = last known teamId
@@ -122,6 +123,7 @@ function GamePage() {
 
   const { mutate: handleStart, isPending: isStarting } = useMutation({
     mutationFn: () => startGame(gameId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['game', gameId] }),
     // BACKEND DEV: Socket.IO 'game:started' will push all clients to the
     // active game view. For now, owner navigates immediately; others redirect
     // on next poll (when game.status === 'ACTIVE').
@@ -186,35 +188,26 @@ function GamePage() {
         </div>
       )}
 
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <header className="z-sticky-chrome shrink-0 border-b border-border bg-background/90 backdrop-blur-sm pt-safe px-4 pb-3">
-        <div className="flex items-center justify-between gap-3 pt-3">
-          <p className="shrink-0 text-sm font-semibold tracking-tight text-foreground">New Game</p>
-          <div className="flex min-w-0 max-w-[min(100%,28rem)] flex-1 justify-end">
-            <div className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-full bg-secondary px-2.5 py-0.5 pl-3 text-secondary-foreground shadow-sm sm:gap-2.5 sm:px-3">
-              <p className="min-w-0 truncate text-left text-[10px] font-medium uppercase leading-snug tracking-wide text-secondary-foreground/90 sm:text-xs">
-                <span className="text-secondary-foreground/75">Game ID</span>{' '}
-                <span className="font-mono font-semibold tabular-nums text-secondary-foreground">{gameId}</span>
-              </p>
-              <div className="flex shrink-0 items-center gap-0.5 border-l border-secondary-foreground/20 pl-2">
-                <HeaderCopyGameIdButton gameId={gameId} inSecondaryPill />
-                <button
-                  type="button"
-                  onClick={() => setInviteSheetOpen(true)}
-                  aria-label="Invite players"
-                  className="tap-target-compact flex h-8 w-8 items-center justify-center rounded-md text-secondary-foreground transition hover:bg-secondary-foreground/10 active:bg-secondary-foreground/18 sm:h-9 sm:w-9"
-                >
-                  <UserPlus className="h-4 w-4" aria-hidden />
-                </button>
-              </div>
-            </div>
+      {/* ── Scrollable content (header scrolls with page) ───────────────── */}
+      <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain scroll-momentum">
+        <header className="px-4 pt-safe pb-3 font-rubik font-extrabold">
+          <div className="flex items-center justify-between gap-3 pt-3">
+            <h1
+              className="m-0 max-w-[min(100%,20rem)] shrink-0 text-xl font-extrabold leading-tight tracking-tight text-foreground sm:text-2xl [background-image:none] [background-clip:unset] [-webkit-background-clip:unset] [-webkit-text-fill-color:hsl(var(--foreground))] filter-none"
+            >
+              Project Hunter
+            </h1>
+            <button
+              type="button"
+              onClick={() => setAboutSheetOpen(true)}
+              className="shrink-0 text-sm font-semibold text-muted-foreground underline-offset-4 transition hover:text-foreground hover:underline active:opacity-70"
+            >
+              About
+            </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* ── Scrollable content ───────────────────────────────────────────── */}
-      <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain scroll-momentum px-4 py-6 space-y-6">
-
+        <div className="space-y-6 px-4 pt-0 pb-6">
         <GameLobbyOverviewCard
           gameId={gameId}
           game={game}
@@ -223,6 +216,7 @@ function GamePage() {
           isOwner={isOwner}
           actorId={currentUser!.id}
           onOpenInviteSheet={() => setInviteSheetOpen(true)}
+          onOpenCreateTeamsSheet={() => setShowCreateTeams(true)}
           startGame={
             isOwner && game.status === 'LOBBY'
               ? {
@@ -237,8 +231,7 @@ function GamePage() {
         {/* ── Participants / Teams ─────────────────────────────────────── */}
         {hasTeams ? (
           // Teams view
-          <section className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Teams</p>
+          <section>
             <TeamsView
               gameId={gameId}
               game={game}
@@ -262,7 +255,7 @@ function GamePage() {
                 return (
                   <li
                     key={p.id}
-                    className="overflow-hidden rounded-xl border border-border bg-secondary/30"
+                    className="overflow-hidden rounded-xl border border-border bg-user-tile"
                   >
                     {/* Player row */}
                     {isMe ? (
@@ -348,8 +341,9 @@ function GamePage() {
                 }
                 handleOwnerEndGame()
               }}
-              className="text-sm text-muted-foreground/60 underline-offset-4 hover:underline active:opacity-60 disabled:opacity-40"
+              className="inline-flex items-center justify-center gap-2 text-sm text-muted-foreground/60 underline-offset-4 hover:underline active:opacity-60 disabled:opacity-40"
             >
+              <LogOut className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
               {isEndingGame ? 'Ending…' : 'Leave game'}
             </button>
           ) : showLeaveConfirm ? (
@@ -375,11 +369,13 @@ function GamePage() {
             <button
               type="button"
               onClick={() => setShowLeaveConfirm(true)}
-              className="text-sm text-muted-foreground/60 underline-offset-4 hover:underline active:opacity-60"
+              className="inline-flex items-center justify-center gap-2 text-sm text-muted-foreground/60 underline-offset-4 hover:underline active:opacity-60"
             >
+              <LogOut className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
               Leave game
             </button>
           )}
+        </div>
         </div>
       </main>
 
@@ -400,43 +396,42 @@ function GamePage() {
           onClose={() => setInviteSheetOpen(false)}
         />
       )}
-    </div>
-  )
-}
 
-function HeaderCopyGameIdButton({
-  gameId,
-  inSecondaryPill,
-}: {
-  gameId: string
-  inSecondaryPill?: boolean
-}) {
-  const [copied, setCopied] = useState(false)
-  async function handleCopy() {
-    await navigator.clipboard.writeText(gameId)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      aria-label="Copy game ID"
-      className={
-        inSecondaryPill
-          ? 'tap-target-compact flex h-8 w-8 items-center justify-center rounded-md text-secondary-foreground transition hover:bg-secondary-foreground/10 active:bg-secondary-foreground/18 sm:h-9 sm:w-9'
-          : 'tap-target-compact flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground active:bg-secondary/60 sm:h-9 sm:w-9'
-      }
-    >
-      {copied ? (
-        <Check
-          className="h-4 w-4 text-success"
-          aria-hidden
-        />
-      ) : (
-        <Copy className="h-4 w-4" aria-hidden />
+      {aboutSheetOpen && (
+        <BottomSheet
+          onClose={() => setAboutSheetOpen(false)}
+          zClassName="z-sheet-lobby"
+          panelClassName="px-5 pb-safe pt-1"
+        >
+          <div className="space-y-4 pb-6">
+            <h2 className="text-center text-lg font-semibold leading-tight text-foreground">
+              About Project Hunter
+            </h2>
+            <p className="text-center text-sm leading-relaxed text-muted-foreground">
+              A competitive scavenger hunt game with a few twists. Vibe-coded and hacked together by{' '}
+              <a
+                href="https://www.thegraceyang.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                Grace Yang
+              </a>{' '}
+              and{' '}
+              <a
+                href="https://www.linkedin.com/in/dengel29"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                Dan Engel
+              </a>
+              .
+            </p>
+          </div>
+        </BottomSheet>
       )}
-    </button>
+    </div>
   )
 }
 

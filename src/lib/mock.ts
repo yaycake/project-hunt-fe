@@ -26,17 +26,27 @@ function uuid(): string {
 // ─── Colour palette (UI only — not stored server-side as a fixed list) ────────
 
 export const TEAM_COLORS = [
-  { id: 'red',    label: 'Red',    hex: '#ef4444' },
-  { id: 'orange', label: 'Orange', hex: '#f97316' },
-  { id: 'yellow', label: 'Yellow', hex: '#eab308' },
-  { id: 'green',  label: 'Green',  hex: '#22c55e' },
-  { id: 'teal',   label: 'Teal',   hex: '#14b8a6' },
-  { id: 'blue',   label: 'Blue',   hex: '#3b82f6' },
-  { id: 'purple', label: 'Purple', hex: '#a855f7' },
-  { id: 'pink',   label: 'Pink',   hex: '#ec4899' },
+  { id: 'sky',    label: 'Sky',    hex: '#11F4F7' },
+  { id: 'red',    label: 'Red',    hex: '#EF4444' },
+  { id: 'orange', label: 'Orange', hex: '#FF6200' },
+  { id: 'yellow', label: 'Yellow', hex: '#FFD000' },
+  { id: 'green',  label: 'Green',  hex: '#C2E812' },
+  { id: 'teal',   label: 'Teal',   hex: '#01F181' },
+  { id: 'blue',   label: 'Blue',   hex: '#263CFF' },
+  { id: 'purple', label: 'Purple', hex: '#6320EE' },
+  { id: 'pink',   label: 'Pink',   hex: '#DC0490' },
 ] as const
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+/** Coerce API enum strings so strict checks like `status === 'LOBBY'` always work. */
+export function normalizeGameStatus(status: unknown): MockGame['status'] {
+  const t = String(status ?? '')
+    .trim()
+    .toUpperCase()
+  if (t === 'LOBBY' || t === 'ACTIVE' || t === 'COMPLETE' || t === 'EXPIRED') return t
+  return 'LOBBY'
+}
 
 export interface MockGame {
   id: string
@@ -188,7 +198,13 @@ export async function joinGame(
 export async function getGame(
   gameId: string,
 ): Promise<{ game: MockGame; participants: MockParticipant[]; teams: MockTeam[] }> {
-  return api(`/api/games/${gameId}`)
+  const data = await api<{ game: MockGame; participants: MockParticipant[]; teams: MockTeam[] }>(
+    `/api/games/${gameId}`,
+  )
+  return {
+    ...data,
+    game: { ...data.game, status: normalizeGameStatus(data.game.status) },
+  }
 }
 
 /**
@@ -197,7 +213,8 @@ export async function getGame(
  *   returns: { game }
  */
 export async function startGame(gameId: string): Promise<{ game: MockGame }> {
-  return api(`/api/games/${gameId}/start`, { method: 'PATCH' })
+  const data = await api<{ game: MockGame }>(`/api/games/${gameId}/start`, { method: 'PATCH' })
+  return { game: { ...data.game, status: normalizeGameStatus(data.game.status) } }
 }
 
 /**
@@ -210,10 +227,11 @@ export async function updateGameSettings(
   gameId: string,
   payload: { actorId: string; timeLimitMinutes?: number; goalsRequired?: number },
 ): Promise<{ game: MockGame }> {
-  return api(`/api/games/${gameId}`, {
+  const data = await api<{ game: MockGame }>(`/api/games/${gameId}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   })
+  return { game: { ...data.game, status: normalizeGameStatus(data.game.status) } }
 }
 
 // ─── Team API ─────────────────────────────────────────────────────────────────
