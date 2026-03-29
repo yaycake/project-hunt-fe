@@ -2,7 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query'
 import { Check, Copy, Crown, UserPlus, Users, X, Trash2 } from 'lucide-react'
-import { getGame, startGame, leaveGame, removePlayer, getCurrentUser, clearCurrentUser } from '@/lib/mock'
+import {
+  getGame,
+  startGame,
+  leaveGame,
+  removePlayer,
+  getCurrentUser,
+  clearCurrentUser,
+  endGameAsOwner,
+} from '@/lib/mock'
 import { GameLobbyOverviewCard, InvitePlayersSheet } from '@/features/lobby/GameLobbyOverviewCard'
 import { CreateTeamsPanel } from '@/features/lobby/CreateTeamsPanel'
 import { PermissionsGate } from '@/features/lobby/PermissionsGate'
@@ -122,6 +130,17 @@ function GamePage() {
   const { mutate: handleLeave, isPending: isLeaving } = useMutation({
     mutationFn: () => leaveGame(gameId, currentUser!.id),
     onSuccess: () => navigate({ to: '/' }),
+  })
+
+  const { mutate: handleOwnerEndGame, isPending: isEndingGame } = useMutation({
+    mutationFn: () => endGameAsOwner(gameId, currentUser!.id),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ['game', gameId] })
+      navigate({ to: '/' })
+    },
+    onError: err => {
+      window.alert(err instanceof Error ? err.message : 'Could not end the game.')
+    },
   })
 
   // ── Redirect all clients when game goes ACTIVE ────────────────────────────
@@ -313,36 +332,55 @@ function GamePage() {
           </section>
         )}
 
-        {/* Leave game — non-owner only, sits at bottom of content */}
-        {!isOwner && (
-          <div className="pt-2 pb-4 text-center">
-            {showLeaveConfirm ? (
-              <div className="flex items-center justify-center gap-3">
-                <span className="text-sm text-muted-foreground">Leave this game?</span>
-                <button
-                  onClick={() => handleLeave()}
-                  disabled={isLeaving}
-                  className="rounded-lg bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground disabled:opacity-50"
-                >
-                  {isLeaving ? 'Leaving…' : 'Leave'}
-                </button>
-                <button
-                  onClick={() => setShowLeaveConfirm(false)}
-                  className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
+        {/* Leave game — owner ends for everyone; others leave only themselves */}
+        <div className="pt-2 pb-4 text-center">
+          {isOwner ? (
+            <button
+              type="button"
+              disabled={isEndingGame}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    'This will end the game for all current players. No one will be able to continue this game.',
+                  )
+                ) {
+                  return
+                }
+                handleOwnerEndGame()
+              }}
+              className="text-sm text-muted-foreground/60 underline-offset-4 hover:underline active:opacity-60 disabled:opacity-40"
+            >
+              {isEndingGame ? 'Ending…' : 'Leave game'}
+            </button>
+          ) : showLeaveConfirm ? (
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-sm text-muted-foreground">Leave this game?</span>
               <button
-                onClick={() => setShowLeaveConfirm(true)}
-                className="text-sm text-muted-foreground/60 underline-offset-4 hover:underline active:opacity-60"
+                type="button"
+                onClick={() => handleLeave()}
+                disabled={isLeaving}
+                className="rounded-lg bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground disabled:opacity-50"
               >
-                Leave Game
+                {isLeaving ? 'Leaving…' : 'Leave'}
               </button>
-            )}
-          </div>
-        )}
+              <button
+                type="button"
+                onClick={() => setShowLeaveConfirm(false)}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowLeaveConfirm(true)}
+              className="text-sm text-muted-foreground/60 underline-offset-4 hover:underline active:opacity-60"
+            >
+              Leave game
+            </button>
+          )}
+        </div>
       </main>
 
       {/* ── Create Teams overlay ──────────────────────────────────────────── */}

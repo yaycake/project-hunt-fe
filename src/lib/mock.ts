@@ -367,3 +367,14 @@ export async function leaveGame(gameId: string, participantId: string): Promise<
   await api(`/api/games/${gameId}/participants/${participantId}`, { method: 'DELETE' })
   clearCurrentUser()
 }
+
+/**
+ * BACKEND DEV:
+ *   DELETE /api/games/:gameId?actorId=… — owner only; deletes the game for all players.
+ *   Uses query param because DELETE request bodies are not reliably delivered (proxies/clients).
+ */
+export async function endGameAsOwner(gameId: string, ownerId: string): Promise<void> {
+  const qs = new URLSearchParams({ actorId: ownerId }).toString()
+  await api(`/api/games/${encodeURIComponent(gameId)}?${qs}`, { method: 'DELETE' })
+  clearCurrentUser()
+}

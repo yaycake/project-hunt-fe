@@ -350,6 +350,23 @@ app.patch('/api/games/:gameId/participants/:participantId/team', (req, res) => {
   res.json({ participant: p })
 })
 
+// BACKEND DEV: DELETE /api/games/:gameId?actorId=…
+// (Query param: DELETE bodies are often stripped by proxies; body.actorId also supported.)
+app.delete('/api/games/:gameId', (req, res) => {
+  const { gameId } = req.params
+  const actorId = req.query.actorId ?? req.body?.actorId
+  const game = store.games[gameId]
+  if (!game) return res.status(404).json({ message: 'Game not found.' })
+  if (!actorId || actorId !== game.ownerId) {
+    return res.status(403).json({ message: 'Only the game owner can end the game.' })
+  }
+  delete store.games[gameId]
+  delete store.participants[gameId]
+  delete store.teams[gameId]
+  console.log(`[game ended for all] ${gameId}`)
+  res.sendStatus(204)
+})
+
 // BACKEND DEV: DELETE /api/games/:gameId/participants/:participantId
 // returns: 204
 // Owner removing someone, or participant removing themselves (leaveGame).

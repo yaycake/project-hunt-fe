@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
-import { joinGame } from '@/lib/mock'
+import { createGame, joinGame } from '@/lib/mock'
 import { cn } from '@/lib/utils'
+
+/** Fallback if the player leaves “Name this game” empty. */
+const DEFAULT_NEW_GAME_NAME = 'New Game'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -15,14 +18,28 @@ const primaryCtaClass =
   'flex w-full items-center justify-center rounded-xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground transition disabled:pointer-events-none disabled:opacity-40 active:opacity-80'
 
 const secondaryCtaClass =
-  'flex w-full items-center justify-center rounded-xl border border-border px-4 py-4 text-base font-semibold transition active:opacity-60'
+  'flex w-full items-center justify-center rounded-xl border border-border px-4 py-4 text-base font-semibold transition active:opacity-60 disabled:pointer-events-none disabled:opacity-40'
 
 function HomePage() {
   const navigate = useNavigate()
   const gameIdInputRef = useRef<HTMLInputElement>(null)
   const [username, setUsername] = useState('')
+  const [gameTitle, setGameTitle] = useState('')
   const [gameCode, setGameCode] = useState('')
   const [flow, setFlow] = useState<'pick' | 'join'>('pick')
+
+  const {
+    mutate: doCreate,
+    isPending: isCreating,
+    error: createError,
+    reset: resetCreateError,
+  } = useMutation({
+    mutationFn: () =>
+      createGame(gameTitle.trim() || DEFAULT_NEW_GAME_NAME, username.trim()),
+    onSuccess: ({ game }) => {
+      navigate({ to: '/game/$gameId', params: { gameId: game.id } })
+    },
+  })
 
   const {
     mutate: doJoin,
@@ -42,10 +59,11 @@ function HomePage() {
     }
   }, [flow])
 
-  function goToCreate() {
+  function startGame() {
     const name = username.trim()
     if (!name) return
-    navigate({ to: '/create', search: { username: name } })
+    resetCreateError()
+    doCreate()
   }
 
   function submitJoin() {
@@ -56,9 +74,9 @@ function HomePage() {
     doJoin()
   }
 
-  const canStart = username.trim().length > 0
+  const canStart = username.trim().length > 0 && !isCreating && !isJoining
   const canSubmitJoin =
-    username.trim().length > 0 && gameCode.trim().length > 0 && !isJoining
+    username.trim().length > 0 && gameCode.trim().length > 0 && !isJoining && !isCreating
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-10 px-6 py-12">
@@ -89,23 +107,30 @@ function HomePage() {
           />
         </div>
 
-        {/* Fixed slots: same vertical rhythm in pick vs join to avoid layout jump */}
+        {/* Three fixed slots: game name ↔ game ID | Start ↔ Join primary | Join secondary ↔ Back */}
         <div
           className="flex flex-col gap-3"
           role="region"
           aria-label={flow === 'pick' ? 'Start or join' : 'Join with game ID'}
         >
-          {/* Slot 1: Start a Game ↔ Game ID (matched min-height) */}
+          {/* Slot 1: Name this game ↔ Game ID (same footprint) */}
           <div className="flex min-h-[5.5rem] flex-col justify-center gap-1.5">
             {flow === 'pick' ? (
-              <button
-                type="button"
-                disabled={!canStart}
-                onClick={goToCreate}
-                className={primaryCtaClass}
-              >
-                Start a Game
-              </button>
+              <>
+                <label htmlFor="home-game-title" className="text-sm font-medium">
+                  Name this game
+                </label>
+                <input
+                  id="home-game-title"
+                  type="text"
+                  name="gameTitle"
+                  autoComplete="off"
+                  placeholder="e.g. Summer Hunt 2026"
+                  value={gameTitle}
+                  onChange={e => setGameTitle(e.target.value)}
+                  className={inputClass}
+                />
+              </>
             ) : (
               <>
                 <label htmlFor="home-game-id" className="text-sm font-medium">
@@ -132,18 +157,16 @@ function HomePage() {
             )}
           </div>
 
-          {/* Slot 2: Join a Game ↔ Join game */}
+          {/* Slot 2: Start a Game ↔ Join game (primary) */}
           <div className="flex min-h-[3.25rem] items-center">
             {flow === 'pick' ? (
               <button
                 type="button"
-                onClick={() => {
-                  resetJoinError()
-                  setFlow('join')
-                }}
-                className={secondaryCtaClass}
+                disabled={!canStart}
+                onClick={startGame}
+                className={primaryCtaClass}
               >
-                Join a Game
+                {isCreating ? 'Starting…' : 'Start a Game'}
               </button>
             ) : (
               <button
@@ -157,9 +180,21 @@ function HomePage() {
             )}
           </div>
 
-          {/* Slot 3: reserved row — invisible in pick so Back doesn’t shift layout */}
-          <div className="flex min-h-[2.75rem] items-center justify-center">
-            {flow === 'join' ? (
+          {/* Slot 3: Join a Game (secondary) ↔ Back (text) — reserved height matches */}
+          <div className="flex min-h-[3.25rem] items-center justify-center">
+            {flow === 'pick' ? (
+              <button
+                type="button"
+                disabled={isCreating}
+                onClick={() => {
+                  resetJoinError()
+                  setFlow('join')
+                }}
+                className={secondaryCtaClass}
+              >
+                Join a Game
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={() => {
@@ -171,13 +206,15 @@ function HomePage() {
               >
                 Back
               </button>
-            ) : (
-              <span className="invisible text-sm" aria-hidden>
-                Back
-              </span>
             )}
           </div>
         </div>
+
+        {flow === 'pick' && createError && (
+          <div className="rounded-lg bg-destructive/10 px-4 py-3">
+            <p className="text-sm text-destructive">{createError.message}</p>
+          </div>
+        )}
 
         {flow === 'join' && joinError && (
           <div className="rounded-lg bg-destructive/10 px-4 py-3 space-y-1">
