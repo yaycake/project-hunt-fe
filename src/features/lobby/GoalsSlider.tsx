@@ -16,7 +16,7 @@ interface Props {
 }
 
 const stepBtn =
-  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-35'
+  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30 active:bg-white/35 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-35'
 
 /**
  * Goal count stepper (GOALS_MIN–GOALS_MAX): minus / number / plus.

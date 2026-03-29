@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { IconButton } from '@/components/ui/IconButton'
+import { Input } from '@/components/ui/Input'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 import { createTeams, TEAM_COLORS } from '@/lib/mock'
 
 interface TeamDraft {
@@ -86,13 +90,15 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-base">Create Teams</h3>
-        <button
+        <IconButton
+          type="button"
+          variant="ghost"
           onClick={onClose}
           aria-label="Close"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground active:opacity-60 sm:h-8 sm:w-8"
+          className="h-7 w-7 sm:h-8 sm:w-8"
         >
           <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        </button>
+        </IconButton>
       </div>
 
       {/* Team count */}
@@ -101,20 +107,30 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
           Number of teams
         </p>
         <div className="flex gap-2">
-          {COUNTS.map(n => (
-            <button
-              key={n}
-              onClick={() => handleCountChange(n)}
-              className={[
-                'flex-1 rounded-xl py-2.5 text-sm font-semibold transition',
-                count === n
-                  ? 'bg-primary text-primary-foreground'
-                  : 'border border-border text-foreground active:opacity-60',
-              ].join(' ')}
-            >
-              {n}
-            </button>
-          ))}
+          {COUNTS.map(n =>
+            count === n ? (
+              <PrimaryButton
+                key={n}
+                type="button"
+                size="compact"
+                className="flex-1"
+                onClick={() => handleCountChange(n)}
+              >
+                {n}
+              </PrimaryButton>
+            ) : (
+              <Button
+                key={n}
+                type="button"
+                variant="secondary"
+                size="compact"
+                className="flex-1"
+                onClick={() => handleCountChange(n)}
+              >
+                {n}
+              </Button>
+            ),
+          )}
         </div>
       </div>
 
@@ -128,12 +144,11 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
             </p>
 
             {/* Name input */}
-            <input
-              type="text"
+            <Input
               value={draft.name}
               onChange={e => setName(i, e.target.value)}
               placeholder={`Team ${i + 1}`}
-              className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/50"
+              className="placeholder:text-muted-foreground/50"
             />
 
             {/* Colour swatches */}
@@ -174,13 +189,13 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
         </p>
       )}
 
-      <button
+      <PrimaryButton
+        type="button"
         onClick={() => isValid && mutate()}
         disabled={!isValid || isPending}
-        className="w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition disabled:opacity-40 active:opacity-80"
       >
         {isPending ? 'Creating…' : 'Create Teams'}
-      </button>
+      </PrimaryButton>
     </div>
   )
 }

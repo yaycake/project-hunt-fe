@@ -23,19 +23,9 @@ function uuid(): string {
  * BACKEND DEV: see mock-server.js for the matching route implementations.
  */
 
-// ─── Colour palette (UI only — not stored server-side as a fixed list) ────────
+// ─── Colour palette (product data — see `lib/theme/teamPalette.ts`) ────────────
 
-export const TEAM_COLORS = [
-  { id: 'sky',    label: 'Sky',    hex: '#11F4F7' },
-  { id: 'red',    label: 'Red',    hex: '#EF4444' },
-  { id: 'orange', label: 'Orange', hex: '#FF6200' },
-  { id: 'yellow', label: 'Yellow', hex: '#FFD000' },
-  { id: 'green',  label: 'Green',  hex: '#C2E812' },
-  { id: 'teal',   label: 'Teal',   hex: '#01F181' },
-  { id: 'blue',   label: 'Blue',   hex: '#263CFF' },
-  { id: 'purple', label: 'Purple', hex: '#6320EE' },
-  { id: 'pink',   label: 'Pink',   hex: '#DC0490' },
-] as const
+export { TEAM_COLORS } from '@/lib/theme/teamPalette'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

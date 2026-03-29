@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Check, Copy, Crown, Ellipsis, Layers, Plus, Share2, User } from 'lucide-react'
+import { Check, Copy, Ellipsis, Plus, Share2, UserStar, UserRound, UsersRound } from 'lucide-react'
 import {
   updateGameSettings,
   type MockGame,
@@ -12,9 +12,21 @@ import { CircularHourDial } from '@/features/lobby/CircularHourDial'
 import { clampGoals, GoalsSlider } from '@/features/lobby/GoalsSlider'
 import { BottomSheet } from '@/components/ui/BottomSheet'
 import { BottomSheetFormChrome } from '@/components/ui/BottomSheetFormChrome'
+import { IconButton } from '@/components/ui/IconButton'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
+import {
+  StatBadge,
+  StatBadgeIconButton,
+  StatBadgeLabel,
+  StatBadgeRow,
+} from '@/components/ui/StatBadge'
 import { cn } from '@/lib/utils'
 
 const MAX_DIAL_HOURS = 12
+
+/** Stat chip icons — primary blue, tracks light/dark mode via CSS variable. */
+const STAT_BADGE_ICON_FILL = 'hsl(var(--primary))'
+const STAT_BADGE_ICON_STROKE = 'hsl(var(--primary))'
 
 /** Bump `v` when replacing `public/images/game-card-bg.svg` so caches fetch the new file. */
 const GAME_CARD_BG_URL = '/images/game-card-bg.svg?v=3'
@@ -59,25 +71,6 @@ function formatTimeLimitMinutes(m: number): string {
   if (min === 0) return `${h} hour${h === 1 ? '' : 's'}`
   return `${h}h ${min}m`
 }
-
-/** Top stat badges — green gradient pill (no left pad); icon circle flush with the pill’s left edge. */
-const statBadgeGradient =
-  'relative inline-flex max-w-full min-h-8 items-center overflow-visible rounded-full bg-gradient-to-b from-[#82cf25] to-[#086d44] py-1 pr-2.5 pl-0 text-sm font-rubik font-bold text-primary-foreground shadow-sm'
-
-/** 32px circle, 16px icon — left edge aligned with the badge. */
-const statBadgeIconCircle =
-  'pointer-events-none absolute left-0 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary-foreground text-primary shadow-sm'
-
-/** Inset for label only (owner name) — full circle + gap before text. */
-const statBadgeLabel = 'min-w-0 pl-10'
-
-/** Row: icon inset + label + optional trailing control (button flush with pill’s right edge). */
-const statBadgeLabelRow =
-  'flex min-w-0 flex-1 items-center gap-1.5 pl-10 pr-0'
-
-/** Plus control inside the green stat pill — reads on gradient. */
-const statBadgeIconBtn =
-  'tap-target-compact inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary-foreground/95 transition hover:bg-primary-foreground/15 active:bg-primary-foreground/25'
 
 /** Outer frame: opaque white 2px ring; inner fill is opaque header + primary-tinted body. */
 const settingsTile =
@@ -310,7 +303,7 @@ export function GameLobbyOverviewCard({
       <div ref={cardContentRef} className="relative z-10 p-4 sm:p-5 will-change-transform">
         <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xl leading-tight tracking-tight sm:text-2xl">
           <h2
-            className="inline-block max-w-full min-w-0 truncate bg-gradient-to-b from-[#b7ff60] to-[#0e9f65] bg-clip-text text-transparent [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+            className="inline-block max-w-full min-w-0 truncate bg-gradient-to-b from-[var(--brand-heading-gradient-from)] to-[var(--brand-heading-gradient-to)] bg-clip-text text-transparent [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
             style={{ filter: GAME_NAME_TITLE_STROKE_FILTER }}
           >
             {game.name}
@@ -321,52 +314,68 @@ export function GameLobbyOverviewCard({
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2 overflow-visible">
-          <span className={statBadgeGradient}>
-            <span className={statBadgeIconCircle} aria-hidden>
-              <Crown className="size-4 shrink-0" />
-            </span>
-            <span className={cn(statBadgeLabel, 'truncate')}>{owner?.username ?? '—'}</span>
-          </span>
-          <span className={cn(statBadgeGradient, 'pr-0')}>
-            <span className={statBadgeIconCircle} aria-hidden>
-              <User className="size-4 shrink-0" />
-            </span>
-            <span className={cn(statBadgeLabelRow, 'tabular-nums')}>
+          <StatBadge
+            icon={
+              <UserStar
+                className="size-4 shrink-0"
+                fill={STAT_BADGE_ICON_FILL}
+                stroke={STAT_BADGE_ICON_STROKE}
+                strokeWidth={1}
+              />
+            }
+          >
+            <StatBadgeLabel className="truncate">{owner?.username ?? '—'}</StatBadgeLabel>
+          </StatBadge>
+          <StatBadge
+            icon={
+              <UserRound
+                className="size-4 shrink-0"
+                fill={STAT_BADGE_ICON_FILL}
+                stroke={STAT_BADGE_ICON_STROKE}
+                strokeWidth={1}
+              />
+            }
+            className="pr-0"
+          >
+            <StatBadgeRow className="tabular-nums">
               <span className="min-w-0 shrink">
                 {participants.length} {participants.length === 1 ? 'player' : 'players'}
               </span>
-              <button
-                type="button"
+              <StatBadgeIconButton
                 onClick={onOpenInviteSheet}
-                className={statBadgeIconBtn}
                 aria-label="Invite players — game ID and share link"
               >
-                <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
-              </button>
-            </span>
-          </span>
-          <span className={cn(statBadgeGradient, isOwner && 'pr-0')}>
-            <span className={statBadgeIconCircle} aria-hidden>
-              <Layers className="size-4 shrink-0" />
-            </span>
-            <span className={cn(statBadgeLabelRow, 'tabular-nums')}>
+                <Plus className="h-4 w-4" aria-hidden />
+              </StatBadgeIconButton>
+            </StatBadgeRow>
+          </StatBadge>
+          <StatBadge
+            icon={
+              <UsersRound
+                className="size-4 shrink-0"
+                fill={STAT_BADGE_ICON_FILL}
+                stroke={STAT_BADGE_ICON_STROKE}
+                strokeWidth={1}
+              />
+            }
+            className={cn(isOwner && 'pr-0')}
+          >
+            <StatBadgeRow className="tabular-nums">
               <span className="min-w-0 shrink">
                 {teams.length} {teams.length === 1 ? 'team' : 'teams'}
               </span>
               {isOwner && (
-                <button
-                  type="button"
+                <StatBadgeIconButton
                   onClick={() =>
                     teams.length === 0 ? onOpenCreateTeamsSheet() : setShowAddTeam(true)
                   }
-                  className={statBadgeIconBtn}
                   aria-label={teams.length === 0 ? 'Create teams' : 'Add a team'}
                 >
-                  <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
-                </button>
+                  <Plus className="h-4 w-4" aria-hidden />
+                </StatBadgeIconButton>
               )}
-            </span>
-          </span>
+            </StatBadgeRow>
+          </StatBadge>
         </div>
 
         {canEditSettings ? (
@@ -434,15 +443,12 @@ export function GameLobbyOverviewCard({
             {startGame ? (
               <>
                 <LobbyCardInviteGameIdRow gameId={gameId} onOpenInviteSheet={onOpenInviteSheet} />
-                <button
+                <PrimaryButton
                   type="button"
                   onClick={startGame.onStart}
                   disabled={!startGame.canStart || startGame.isStarting}
                   className={cn(
-                    'mt-4 w-full min-w-0 rounded-xl border-0 bg-primary px-4 py-3.5 text-base font-semibold text-primary-foreground shadow-sm transition',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                    'enabled:hover:bg-primary/90 enabled:active:opacity-90',
-                    'disabled:cursor-not-allowed disabled:opacity-65',
+                    'mt-4 min-w-0 text-base disabled:opacity-65',
                   )}
                 >
                   {startGame.isStarting
@@ -450,7 +456,7 @@ export function GameLobbyOverviewCard({
                     : startGame.canStart
                       ? 'Start Game'
                       : `Need ${2 - participants.length} more player${2 - participants.length === 1 ? '' : 's'}`}
-                </button>
+                </PrimaryButton>
               </>
             ) : game.status === 'LOBBY' && !isOwner ? (
               <LobbyPregameStatus />
@@ -483,9 +489,6 @@ export function GameLobbyOverviewCard({
   )
 }
 
-const lobbyCardIconBtn =
-  'tap-target-compact flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-foreground transition hover:bg-white/20 active:bg-white/30'
-
 function LobbyCardCopyGameIdButton({ gameId }: { gameId: string }) {
   const [copied, setCopied] = useState(false)
   async function handleCopy() {
@@ -494,13 +497,18 @@ function LobbyCardCopyGameIdButton({ gameId }: { gameId: string }) {
     window.setTimeout(() => setCopied(false), 2000)
   }
   return (
-    <button type="button" onClick={handleCopy} aria-label="Copy game ID" className={lobbyCardIconBtn}>
+    <IconButton
+      type="button"
+      variant="inverse"
+      aria-label="Copy game ID"
+      onClick={handleCopy}
+    >
       {copied ? (
         <Check className="h-4 w-4 text-success" aria-hidden />
       ) : (
         <Copy className="h-4 w-4" aria-hidden />
       )}
-    </button>
+    </IconButton>
   )
 }
 
@@ -530,14 +538,14 @@ function LobbyCardInviteGameIdRow({
           </p>
           <div className="flex shrink-0 items-center gap-2">
             <LobbyCardCopyGameIdButton gameId={gameId} />
-            <button
+            <IconButton
               type="button"
-              onClick={onOpenInviteSheet}
+              variant="inverse"
               aria-label="Share invite"
-              className={lobbyCardIconBtn}
+              onClick={onOpenInviteSheet}
             >
               <Share2 className="h-4 w-4" aria-hidden />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>
@@ -611,14 +619,14 @@ export function InvitePlayersSheet({
       }
       between={
         <>
-          <button
+          <PrimaryButton
             type="button"
             onClick={handleNativeShare}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-base font-semibold text-primary-foreground shadow-sm active:opacity-90"
+            className="mt-6 gap-2 text-base"
           >
             <Share2 className="h-5 w-5 shrink-0" aria-hidden />
             Share invite
-          </button>
+          </PrimaryButton>
 
           {shareState === 'copied' && (
             <p className="mt-2 text-center text-xs text-muted-foreground">Message copied to clipboard.</p>

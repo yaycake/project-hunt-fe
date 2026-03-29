@@ -6,6 +6,7 @@ import {
   mapLocationStateToStored,
   mapNotificationStateToStored,
 } from '@/features/lobby/participantPermissionModel'
+import { IconButton } from '@/components/ui/IconButton'
 import { updateParticipantPermissions, updateParticipantUsername, type MockParticipant } from '@/lib/mock'
 import { useLobbyPermissions } from '@/features/lobby/useLobbyPermissions'
 import { cn } from '@/lib/utils'
@@ -116,31 +117,33 @@ export function LobbySelfTile({
               className="min-w-0 flex-1 rounded-lg border border-ring bg-white px-3 py-1.5 text-sm font-medium"
               aria-label="Your display name"
             />
-            <button
+            <IconButton
               type="button"
+              variant="ghost"
               onClick={commitName}
               disabled={savingName}
               aria-label="Save name"
-              className="shrink-0 text-success active:opacity-60"
+              className="shrink-0 text-success"
             >
               {savingName ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin sm:h-4 sm:w-4" />
               ) : (
                 <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               )}
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               type="button"
+              variant="ghost"
               onClick={() => {
                 setEditing(false)
                 setDraft(participant.username)
               }}
               disabled={savingName}
               aria-label="Cancel"
-              className="shrink-0 text-muted-foreground active:opacity-60"
+              className="shrink-0 text-muted-foreground"
             >
               <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            </button>
+            </IconButton>
           </div>
         </div>
       ) : (
@@ -160,18 +163,19 @@ export function LobbySelfTile({
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
               <span className="text-sm font-medium">{participant.username}</span>
               {nameTrailing}
-              <button
+              <IconButton
                 type="button"
+                variant="ghost"
                 data-team-reassign-no-drag=""
                 onClick={() => {
                   setDraft(participant.username)
                   setEditing(true)
                 }}
                 aria-label="Edit your name"
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground active:opacity-60 sm:h-7 sm:w-7"
+                className="h-6 w-6 shrink-0 sm:h-7 sm:w-7"
               >
                 <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </button>
+              </IconButton>
             </div>
             <div
               data-team-reassign-no-drag=""

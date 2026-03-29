@@ -90,13 +90,6 @@ export interface CircularHourDialProps {
 const trackBase =
   'fill-none transition-[stroke] duration-150 [stroke-linejoin:round] [stroke-linecap:round]'
 
-/** Selected time span — bright yellow + soft outer glow. */
-const SELECTED_STROKE = '#FFD904'
-const selectedRingGlowStyle = {
-  filter:
-    'drop-shadow(0 0 2px rgba(255, 217, 4, 1)) drop-shadow(0 0 8px rgba(255, 217, 4, 0.65)) drop-shadow(0 0 14px rgba(255, 217, 4, 0.35))',
-} as const
-
 /**
  * 12-hour ring: selected span is one continuous rounded arc; remaining hours are segmented
  * translucent gray. Center is open (no hole fill) so the card shows through.
@@ -245,19 +238,15 @@ export function CircularHourDial({
               cy={CY}
               r={R_MID}
               fill="none"
-              className={trackBase}
-              stroke={SELECTED_STROKE}
+              className={cn(trackBase, 'dial-selected-arc')}
               strokeWidth={STROKE}
-              style={selectedRingGlowStyle}
             />
           ) : (
             selectedPathD && (
               <path
                 d={selectedPathD}
-                className={trackBase}
-                stroke={SELECTED_STROKE}
+                className={cn(trackBase, 'dial-selected-arc')}
                 strokeWidth={STROKE}
-                style={selectedRingGlowStyle}
               />
             )
           )}

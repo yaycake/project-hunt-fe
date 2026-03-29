@@ -30,7 +30,7 @@ type ArmState =
       participant: MockParticipant
       startX: number
       startY: number
-      timer: ReturnType<typeof setTimeout>
+      timer: number
       captureEl: HTMLElement | null
       pointerId: number
     }

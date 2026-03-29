@@ -12,9 +12,10 @@ import {
   type MockCurrentUser,
 } from '@/lib/mock'
 import { BottomSheet } from '@/components/ui/BottomSheet'
+import { userTileClassName } from '@/components/ui/UserTile'
 import { AddTeamPanel } from '@/features/lobby/AddTeamPanel'
 import { TeamCard } from '@/features/lobby/TeamCard'
-import { TeamReassignGrip, useTeamReassignDrag } from '@/features/lobby/TeamReassignDrag'
+import { useTeamReassignDrag } from '@/features/lobby/TeamReassignDrag'
 import { invalidateGameQueriesWithViewTransition } from '@/lib/viewTransition'
 import { cn } from '@/lib/utils'
 
@@ -220,7 +221,8 @@ export function TeamsView({
               onClick={() => setShowAddTeam(true)}
               disabled={teamReassign.isDragging}
               className={cn(
-                'flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-user-tile py-3.5 text-sm font-medium text-muted-foreground transition active:opacity-60',
+                userTileClassName,
+                'flex w-full items-center justify-center gap-2 border-dashed py-3.5 text-sm font-medium text-muted-foreground transition active:opacity-60',
                 teamReassign.isDragging && 'pointer-events-none opacity-40',
               )}
             >

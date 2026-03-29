@@ -3,6 +3,8 @@ import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-r
 import { useMutation } from '@tanstack/react-query'
 import { ChevronLeft } from 'lucide-react'
 import { z } from 'zod'
+import { Input } from '@/components/ui/Input'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 import { createGame } from '@/lib/mock'
 
 const createSearchSchema = z.object({
@@ -67,24 +69,20 @@ function CreateGamePage() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
         <Field label="Game name" error={errors.gameName}>
-          <input
-            type="text"
+          <Input
             placeholder="e.g. Summer Hunt 2026"
             value={gameName}
             onChange={(e) => setGameName(e.target.value)}
             autoComplete="off"
-            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/60"
           />
         </Field>
 
         <Field label="Your name" error={errors.username}>
-          <input
-            type="text"
+          <Input
             placeholder="e.g. Grace"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="nickname"
-            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm transition placeholder:text-muted-foreground/60"
           />
         </Field>
 
@@ -94,13 +92,9 @@ function CreateGamePage() {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="mt-2 flex w-full items-center justify-center rounded-xl bg-primary px-4 py-4 text-base font-semibold text-primary-foreground transition disabled:opacity-50 active:opacity-80"
-        >
+        <PrimaryButton type="submit" size="lg" disabled={isPending} className="mt-2">
           {isPending ? 'Creating…' : 'Create Game'}
-        </button>
+        </PrimaryButton>
       </form>
     </main>
   )

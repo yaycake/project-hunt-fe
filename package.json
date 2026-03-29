@@ -14,15 +14,15 @@
   "dependencies": {
     "@tanstack/react-query": "^5.66.0",
     "@tanstack/react-router": "^1.114.0",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.468.0",
+    "lucide-react": "^1.7.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.6.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/node": "^22.10.0",
     "@tanstack/react-query-devtools": "^5.66.0",
     "@tanstack/router-devtools": "^1.114.0",
     "@tanstack/router-plugin": "^1.114.0",

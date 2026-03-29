@@ -4,6 +4,7 @@ import type { MockParticipant } from '@/lib/mock'
 import { resolveParticipantPermissionBuckets } from '@/features/lobby/participantPermissionModel'
 import type { LocationPermissionUi, NotificationPermissionUi } from '@/features/lobby/useLobbyPermissions'
 import { BottomSheetFormChrome } from '@/components/ui/BottomSheetFormChrome'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 import { cn } from '@/lib/utils'
 
 /** Inline badges: fixed zinc + pill chrome — theme `muted-foreground` sits too close to body text for quick scanning. */
@@ -124,14 +125,14 @@ export function ParticipantPermissionStatus({ participant, className, selfPermis
                     )}
                   </p>
                   {showLocationSheetCta && self && (
-                    <button
+                    <PrimaryButton
                       type="button"
                       disabled={self.locLoading}
                       onClick={() => self.requestLocation()}
-                      className="mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-sm active:opacity-90 disabled:opacity-60"
+                      className="mt-3 disabled:opacity-60"
                     >
                       {self.locLoading ? 'Waiting…' : 'Enable Location sharing'}
-                    </button>
+                    </PrimaryButton>
                   )}
                 </>
               )}
@@ -180,14 +181,14 @@ export function ParticipantPermissionStatus({ participant, className, selfPermis
                       )}
                     </p>
                     {showNotificationSheetCta && self && (
-                      <button
+                      <PrimaryButton
                         type="button"
                         disabled={self.notifLoading}
                         onClick={() => self.requestNotification()}
-                        className="mt-3 w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-sm active:opacity-90 disabled:opacity-60"
+                        className="mt-3 disabled:opacity-60"
                       >
                         {self.notifLoading ? 'Waiting…' : 'Enable notifications'}
-                      </button>
+                      </PrimaryButton>
                     )}
                   </>
                 )}

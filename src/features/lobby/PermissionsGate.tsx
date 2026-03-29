@@ -7,6 +7,7 @@ import {
   NOTIFICATION_DENY_ALREADY_BLOCKED_HINT,
   NOTIFICATION_DENY_NO_PROMPT_HINT,
 } from '@/features/lobby/permissionUtils'
+import { PrimaryButton } from '@/components/ui/PrimaryButton'
 import { cn } from '@/lib/utils'
 
 export { isNotificationPermissionRequestSupported } from '@/features/lobby/permissionUtils'
@@ -100,17 +101,6 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
       setNotificationDenyHint(NOTIFICATION_DENY_NO_PROMPT_HINT)
     }
   }, [])
-
-  /** Demo only: pretend both are allowed and go straight to the lobby. */
-  const handleDemoSkipAllowAll = useCallback(() => {
-    setLocationErrorHint(null)
-    setNotificationDenyHint(null)
-    setLocationOutcome('granted')
-    if (isNotificationPermissionRequestSupported()) {
-      setNotificationOutcome('granted')
-    }
-    onContinue()
-  }, [onContinue])
 
   const locationDone =
     locationOutcome === 'granted' ||
@@ -219,20 +209,18 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
                   )}
                   {(locationOutcome === 'idle' || locationOutcome === 'loading') && (
                     <>
-                      <button
+                      <PrimaryButton
                         type="button"
                         onClick={requestLocation}
                         disabled={locationOutcome === 'loading'}
                         aria-label="Allow location access"
                         className={cn(
-                          'mt-2 w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-sm',
-                          'transition hover:bg-primary/90 active:opacity-80',
-                          'ring-1 ring-primary/20 dark:ring-primary/30',
-                          locationOutcome === 'loading' && 'opacity-70',
+                          'mt-2 ring-1 ring-primary/20 dark:ring-primary/30',
+                          'disabled:opacity-70',
                         )}
                       >
                         {locationOutcome === 'loading' ? 'Waiting…' : 'Allow'}
-                      </button>
+                      </PrimaryButton>
                       {locationErrorHint && (
                         <p className="mt-2 text-xs text-muted-foreground">{locationErrorHint}</p>
                       )}
@@ -297,20 +285,18 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
                   </p>
                   {(notificationOutcome === 'idle' || notificationOutcome === 'loading') && (
                     <>
-                      <button
+                      <PrimaryButton
                         type="button"
                         onClick={requestNotification}
                         disabled={notificationOutcome === 'loading'}
                         aria-label="Allow notifications"
                         className={cn(
-                          'mt-2 w-full rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-sm',
-                          'transition hover:bg-primary/90 active:opacity-80',
-                          'ring-1 ring-primary/20 dark:ring-primary/30',
-                          notificationOutcome === 'loading' && 'opacity-70',
+                          'mt-2 ring-1 ring-primary/20 dark:ring-primary/30',
+                          'disabled:opacity-70',
                         )}
                       >
                         {notificationOutcome === 'loading' ? 'Waiting…' : 'Allow'}
-                      </button>
+                      </PrimaryButton>
                       <div className="mt-2 flex gap-2 text-xs leading-relaxed text-muted-foreground/55">
                         <Info
                           className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/45"
@@ -339,31 +325,20 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
         </section>
       </main>
 
-      <div className="shrink-0 px-4 pb-2">
-        <button
-          type="button"
-          onClick={handleDemoSkipAllowAll}
-          className="text-xs font-medium text-muted-foreground/80 underline-offset-2 transition hover:text-muted-foreground hover:underline active:opacity-70"
-          aria-label="Demo only: mark permissions as allowed and continue to the lobby"
-        >
-          Demo: skip / allow all
-        </button>
-      </div>
-
       <footer className="shrink-0 border-t border-border px-4 pt-3 pb-safe">
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={!canContinue}
-          className={cn(
-            'w-full rounded-xl px-4 py-4 text-base font-semibold transition active:opacity-80',
-            canContinue
-              ? 'bg-primary text-primary-foreground'
-              : 'cursor-not-allowed bg-secondary text-muted-foreground',
-          )}
-        >
-          Continue to Lobby
-        </button>
+        {canContinue ? (
+          <PrimaryButton type="button" onClick={onContinue} size="lg">
+            Continue to Lobby
+          </PrimaryButton>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="w-full cursor-not-allowed rounded-xl bg-secondary px-4 py-4 text-base font-semibold text-muted-foreground transition active:opacity-80"
+          >
+            Continue to Lobby
+          </button>
+        )}
       </footer>
     </div>
   )
