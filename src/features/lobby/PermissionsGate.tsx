@@ -151,11 +151,11 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
 
   return (
     <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-background pt-safe">
-      <header className="shrink-0 border-b border-border px-4 pb-4 pt-3">
+      <header className="shrink-0 border-b border-border px-4 pb-4 pt-3 font-rubik font-extrabold">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Get ready
         </p>
-        <h1 className="text-xl font-bold leading-tight">Permissions</h1>
+        <h1 className="text-xl leading-tight">Permissions</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Two permissions help the hunt work. Change them anytime in your device settings.
         </p>
@@ -183,7 +183,7 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
             </div>
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold">Location</h2>
+                <h2 className="text-base">Location</h2>
                 {locationOutcome === 'granted' && (
                   <span className="text-xs font-medium text-success">
                     Allowed
@@ -275,7 +275,7 @@ export function PermissionsGate({ onContinue }: PermissionsGateProps) {
             </div>
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold">Notifications</h2>
+                <h2 className="text-base">Notifications</h2>
                 {notificationOutcome === 'granted' && (
                   <span className="text-xs font-medium text-success">
                     Allowed

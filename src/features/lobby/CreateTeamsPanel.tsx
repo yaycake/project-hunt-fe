@@ -85,7 +85,7 @@ export function CreateTeamsPanel({ gameId, onClose }: Props) {
     <div className="rounded-2xl border border-border bg-background p-5 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Create Teams</h3>
+        <h3 className="text-base">Create Teams</h3>
         <button
           onClick={onClose}
           aria-label="Close"

@@ -47,7 +47,7 @@ export function AddTeamPanel({ gameId, existingTeams, actorId, onClose }: Props)
   return (
     <div className="rounded-2xl border border-border bg-background p-5 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">Add team</h3>
+        <h3 className="text-base">Add team</h3>
         <button
           type="button"
           onClick={onClose}

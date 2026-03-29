@@ -29,8 +29,16 @@ function formatTimeLimitMinutes(m: number): string {
   return `${h}h ${min}m`
 }
 
-const neutralBadge =
-  'inline-flex max-w-full items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-sm font-medium text-foreground'
+/** Top stat badges — green gradient pill (no left pad); icon circle flush with the pill’s left edge. */
+const statBadgeGradient =
+  'relative inline-flex max-w-full min-h-8 items-center overflow-visible rounded-full bg-gradient-to-b from-[#82cf25] to-[#086d44] py-1 pr-2.5 pl-0 text-sm font-rubik font-bold text-primary-foreground shadow-sm'
+
+/** 32px circle, 16px icon — left edge aligned with the badge. */
+const statBadgeIconCircle =
+  'pointer-events-none absolute left-0 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-primary-foreground text-primary shadow-sm'
+
+/** Inset for label: full circle + gap before text. */
+const statBadgeLabel = 'min-w-0 pl-10'
 
 const badgeIconBtn =
   'tap-target-compact inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground transition active:bg-muted/80'
@@ -193,153 +201,174 @@ export function GameLobbyOverviewCard({
   )
 
   return (
-    <section className="rounded-2xl border border-border bg-secondary/30 p-4 shadow-sm dark:bg-zinc-900/40 sm:p-5">
-      <h2 className="text-xl font-bold leading-tight tracking-tight sm:text-2xl">{game.name}</h2>
+    <section className="relative isolate overflow-hidden rounded-2xl border-4 border-primary-foreground bg-secondary/30 shadow-sm dark:bg-zinc-900/40">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[url('/images/game-card-bg.svg')] bg-cover bg-center bg-no-repeat"
+      />
+      <div className="relative z-10 p-4 sm:p-5">
+        <h1 className="text-xl leading-tight tracking-tight sm:text-2xl">{game.name}</h1>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className={neutralBadge}>
-          <Crown className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-hidden />
-          <span className="min-w-0 truncate">{owner?.username ?? '—'}</span>
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className={cn(neutralBadge, 'tabular-nums')}>
-            <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-            {participants.length} {participants.length === 1 ? 'player' : 'players'}
+        <div className="mt-3 flex flex-wrap items-center gap-2 overflow-visible">
+          <span className={statBadgeGradient}>
+            <span className={statBadgeIconCircle} aria-hidden>
+              <Crown className="size-4 shrink-0" />
+            </span>
+            <span className={cn(statBadgeLabel, 'truncate')}>{owner?.username ?? '—'}</span>
           </span>
-          <button
-            type="button"
-            onClick={onOpenInviteSheet}
-            className={badgeIconBtn}
-            aria-label="Invite players — game ID and share link"
-          >
-            <UserPlus className="h-4 w-4" aria-hidden />
-          </button>
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className={cn(neutralBadge, 'tabular-nums')}>
-            <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-            {teams.length} {teams.length === 1 ? 'team' : 'teams'}
-          </span>
-          {isOwner && teams.length > 0 && (
+          <span className="inline-flex items-center gap-1">
+            <span className={statBadgeGradient}>
+              <span className={statBadgeIconCircle} aria-hidden>
+                <User className="size-4 shrink-0" />
+              </span>
+              <span className={cn(statBadgeLabel, 'tabular-nums')}>
+                {participants.length} {participants.length === 1 ? 'player' : 'players'}
+              </span>
+            </span>
             <button
               type="button"
-              onClick={() => setShowAddTeam(true)}
+              onClick={onOpenInviteSheet}
               className={badgeIconBtn}
-              aria-label="Add a team"
+              aria-label="Invite players — game ID and share link"
             >
-              <Plus className="h-4 w-4" aria-hidden />
+              <UserPlus className="h-4 w-4" aria-hidden />
             </button>
-          )}
-        </span>
-      </div>
-
-      {teams.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {teams.map(t => (
-            <span
-              key={t.id}
-              className={cn(
-                'inline-flex max-w-[min(100%,12rem)] truncate rounded-full px-2.5 py-1 text-xs font-medium shadow-sm',
-                contrastTextClass(t.color),
-              )}
-              style={{ backgroundColor: t.color }}
-              title={t.name}
-            >
-              {t.name}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className={statBadgeGradient}>
+              <span className={statBadgeIconCircle} aria-hidden>
+                <Layers className="size-4 shrink-0" />
+              </span>
+              <span className={cn(statBadgeLabel, 'tabular-nums')}>
+                {teams.length} {teams.length === 1 ? 'team' : 'teams'}
+              </span>
             </span>
-          ))}
+            {isOwner && teams.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAddTeam(true)}
+                className={badgeIconBtn}
+                aria-label="Add a team"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+              </button>
+            )}
+          </span>
         </div>
-      )}
 
-      {canEditSettings ? (
-        <div className="mt-4 flex flex-row gap-3 items-stretch">
-          <div className={settingsTile}>
-            <p className={settingsTileTitle}>Set time limit</p>
-            <CircularHourDial
-              centerSubtitle=""
-              hours={dialHours}
-              onHoursChange={onDialHoursChange}
-              maxHours={MAX_DIAL_HOURS}
-              disabled={isPending}
-            />
+        {teams.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {teams.map(t => (
+              <span
+                key={t.id}
+                className={cn(
+                  'inline-flex max-w-[min(100%,12rem)] truncate rounded-full px-2.5 py-1 text-xs font-medium shadow-sm',
+                  contrastTextClass(t.color),
+                )}
+                style={{ backgroundColor: t.color }}
+                title={t.name}
+              >
+                {t.name}
+              </span>
+            ))}
           </div>
-          <div className={settingsTile}>
-            <p className={settingsTileTitle}>Set Number of Goals</p>
-            <div className={settingsTileBodyCenter}>
-              <GoalsSlider value={goalsValue} onValueChange={onGoalsChange} disabled={isPending} />
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 flex flex-row gap-3 items-stretch">
-          <div className={settingsTile}>
-            <p className={settingsTileTitle}>Time limit</p>
-            {game.timeLimitMinutes > MAX_DIAL_HOURS * 60 ? (
-              <p className="text-center font-medium">{formatTimeLimitMinutes(game.timeLimitMinutes)}</p>
-            ) : (
+        )}
+
+        {canEditSettings ? (
+          <div className="mt-4 flex flex-row gap-3 items-stretch">
+            <div className={settingsTile}>
+              <p className={settingsTileTitle}>Set time limit</p>
               <CircularHourDial
                 centerSubtitle=""
-                hours={hoursFromMinutes(game.timeLimitMinutes)}
-                onHoursChange={() => {}}
+                hours={dialHours}
+                onHoursChange={onDialHoursChange}
                 maxHours={MAX_DIAL_HOURS}
-                readOnly
+                disabled={isPending}
               />
-            )}
-          </div>
-          <div className={settingsTile}>
-            <p className={settingsTileTitle}>Goals</p>
-            <div className={settingsTileBodyCenter}>
-              <p className="text-center text-3xl font-bold tabular-nums text-foreground">
-                {clampGoals(game.goalsRequired)}
-              </p>
+            </div>
+            <div className={settingsTile}>
+              <p className={settingsTileTitle}>Set Number of Goals</p>
+              <div className={settingsTileBodyCenter}>
+                <GoalsSlider value={goalsValue} onValueChange={onGoalsChange} disabled={isPending} />
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {startGame ? (
-        <div className="mt-5 border-t border-border/60 pt-4">
-          <button
-            type="button"
-            onClick={startGame.onStart}
-            disabled={!startGame.canStart || startGame.isStarting}
-            className={cn(
-              'w-full min-w-0 rounded-xl border-0 bg-primary px-4 py-3.5 text-base font-semibold text-primary-foreground shadow-sm transition',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-              'enabled:hover:bg-primary/90 enabled:active:opacity-90',
-              'disabled:cursor-not-allowed disabled:opacity-65',
-            )}
-          >
-            {startGame.isStarting
-              ? 'Starting…'
-              : startGame.canStart
-                ? 'Start Game'
-                : `Need ${2 - participants.length} more player${2 - participants.length === 1 ? '' : 's'}`}
-          </button>
-        </div>
-      ) : (
-        game.status === 'LOBBY' &&
-        !isOwner && (
-          <div className="mt-5 border-t border-border/60 pt-4">
-            <LobbyPregameStatus />
+        ) : (
+          <div className="mt-4 flex flex-row gap-3 items-stretch">
+            <div className={settingsTile}>
+              <p className={settingsTileTitle}>Time limit</p>
+              {game.timeLimitMinutes > MAX_DIAL_HOURS * 60 ? (
+                <p className="text-center font-medium">{formatTimeLimitMinutes(game.timeLimitMinutes)}</p>
+              ) : (
+                <CircularHourDial
+                  centerSubtitle=""
+                  hours={hoursFromMinutes(game.timeLimitMinutes)}
+                  onHoursChange={() => {}}
+                  maxHours={MAX_DIAL_HOURS}
+                  readOnly
+                />
+              )}
+            </div>
+            <div className={settingsTile}>
+              <p className={settingsTileTitle}>Goals</p>
+              <div className={settingsTileBodyCenter}>
+                <p className="text-center text-3xl font-bold tabular-nums text-foreground">
+                  {clampGoals(game.goalsRequired)}
+                </p>
+              </div>
+            </div>
           </div>
-        )
-      )}
+        )}
 
-      {isOwner && showAddTeam && (
-        <BottomSheet
-          zClassName="z-sheet-lobby"
-          panelClassName="pb-safe"
-          onClose={() => setShowAddTeam(false)}
-        >
-          <AddTeamPanel
-            gameId={gameId}
-            existingTeams={teams}
-            actorId={actorId}
+        {(startGame ||
+          (game.status === 'LOBBY' && !isOwner) ||
+          game.status !== 'LOBBY') && (
+          <div className="mt-5 border-t border-border/60 pt-4">
+            {startGame ? (
+              <button
+                type="button"
+                onClick={startGame.onStart}
+                disabled={!startGame.canStart || startGame.isStarting}
+                className={cn(
+                  'w-full min-w-0 rounded-xl border-0 bg-primary px-4 py-3.5 text-base font-semibold text-primary-foreground shadow-sm transition',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                  'enabled:hover:bg-primary/90 enabled:active:opacity-90',
+                  'disabled:cursor-not-allowed disabled:opacity-65',
+                )}
+              >
+                {startGame.isStarting
+                  ? 'Starting…'
+                  : startGame.canStart
+                    ? 'Start Game'
+                    : `Need ${2 - participants.length} more player${2 - participants.length === 1 ? '' : 's'}`}
+              </button>
+            ) : game.status === 'LOBBY' && !isOwner ? (
+              <LobbyPregameStatus />
+            ) : (
+              <p className="text-center text-sm leading-relaxed text-muted-foreground">
+                {game.status === 'ACTIVE' && 'This game has already started.'}
+                {game.status === 'COMPLETE' && 'This game is complete.'}
+                {game.status === 'EXPIRED' && 'This game has ended.'}
+              </p>
+            )}
+          </div>
+        )}
+
+        {isOwner && showAddTeam && (
+          <BottomSheet
+            zClassName="z-sheet-lobby"
+            panelClassName="pb-safe"
             onClose={() => setShowAddTeam(false)}
-          />
-        </BottomSheet>
-      )}
+          >
+            <AddTeamPanel
+              gameId={gameId}
+              existingTeams={teams}
+              actorId={actorId}
+              onClose={() => setShowAddTeam(false)}
+            />
+          </BottomSheet>
+        )}
+      </div>
     </section>
   )
 }
@@ -394,7 +423,7 @@ export function InvitePlayersSheet({
       doneTopSpacing="mt-4"
       top={
         <>
-          <h2 className="pr-10 text-center text-lg font-semibold leading-tight">Invite players</h2>
+          <h2 className="pr-10 text-center text-lg leading-tight">Invite players</h2>
           <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
             <p>
               Tap <span className="font-medium text-foreground">Share</span> below to open your

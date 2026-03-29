@@ -1,5 +1,38 @@
 @import "tailwindcss";
 
+/* Self-hosted variable fonts — public/fonts/ */
+@font-face {
+  font-family: 'Rethink Sans';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/RethinkSans-VariableFont_wght.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Rethink Sans';
+  font-style: italic;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/RethinkSans-Italic-VariableFont_wght.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Rubik';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('/fonts/Rubik-VariableFont_wght.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Rubik';
+  font-style: italic;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('/fonts/Rubik-Italic-VariableFont_wght.ttf') format('truetype');
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -7,6 +40,9 @@
   Without @theme, those classes don’t resolve to hsl(var(--primary)), so buttons looked empty.
 */
 @theme inline {
+  --font-sans: 'Rethink Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol';
+  --font-rubik: 'Rubik', 'Rethink Sans', ui-sans-serif, system-ui, sans-serif;
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-card: hsl(var(--card));
@@ -112,6 +148,7 @@
 
   /* ─── Body ──────────────────────────────────────────────────────────────── */
   body {
+    font-family: var(--font-sans);
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
 
@@ -124,6 +161,46 @@
     */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Headings — Rubik extrabold (variable wght 800) */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-rubik);
+    font-weight: 800;
+  }
+
+  /*
+    H1 — vertical green gradient + primary-foreground outline (drop-shadows;
+    avoids WebKit bug with text-stroke + background-clip:text).
+  */
+  h1 {
+    display: inline-block;
+    max-width: 100%;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    background-image: linear-gradient(180deg, #b7ff60 0%, #0e9f65 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    filter:
+      drop-shadow(-1px -1px 0 hsl(var(--primary-foreground)))
+      drop-shadow(1px -1px 0 hsl(var(--primary-foreground)))
+      drop-shadow(-1px 1px 0 hsl(var(--primary-foreground)))
+      drop-shadow(1px 1px 0 hsl(var(--primary-foreground)))
+      drop-shadow(0 -1px 0 hsl(var(--primary-foreground)))
+      drop-shadow(0 1px 0 hsl(var(--primary-foreground)))
+      drop-shadow(-1px 0 0 hsl(var(--primary-foreground)))
+      drop-shadow(1px 0 0 hsl(var(--primary-foreground)));
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
   }
 
   /* ─── Inputs: prevent iOS auto-zoom ─────────────────────────────────────
@@ -190,6 +267,47 @@
         animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
       }
     }
+  }
+}
+
+@layer components {
+  /*
+    Primary CTAs — no solid primary fill: `bg-primary` is overridden to transparent; the face is
+    `button-bg.svg` on ::before. Label is black Rubik semibold; stroke is primary-foreground (white).
+
+    `!important` on color/font beats Tailwind utilities (`text-primary-foreground`, `font-semibold`)
+    which load in @layer utilities and would otherwise override @layer components.
+  */
+  button.bg-primary.text-primary-foreground,
+  a.bg-primary.text-primary-foreground,
+  [role='button'].bg-primary.text-primary-foreground {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    font-family: var(--font-rubik) !important;
+    font-weight: 600 !important;
+    background-color: transparent !important;
+    color: #000 !important;
+    -webkit-text-fill-color: #000 !important;
+    text-shadow: none;
+    outline: 2px solid hsl(var(--primary-foreground));
+    outline-offset: -2px;
+  }
+
+  /* Full art above transparent fill, below label (CSS stacking). */
+  button.bg-primary.text-primary-foreground::before,
+  a.bg-primary.text-primary-foreground::before,
+  [role='button'].bg-primary.text-primary-foreground::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-image: url('/images/button-bg.svg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
   }
 }
 

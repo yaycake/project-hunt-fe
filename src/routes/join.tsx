@@ -56,7 +56,7 @@ function JoinGamePage() {
 
       {/* Header */}
       <div className="mb-8 space-y-1">
-        <h1 className="text-2xl font-bold">Join a Game</h1>
+        <h1 className="text-2xl">Join a Game</h1>
         <p className="text-sm text-muted-foreground">
           Enter the 6-character code shared by the game owner.
         </p>

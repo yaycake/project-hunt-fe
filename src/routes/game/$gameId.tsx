@@ -122,6 +122,7 @@ function GamePage() {
 
   const { mutate: handleStart, isPending: isStarting } = useMutation({
     mutationFn: () => startGame(gameId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['game', gameId] }),
     // BACKEND DEV: Socket.IO 'game:started' will push all clients to the
     // active game view. For now, owner navigates immediately; others redirect
     // on next poll (when game.status === 'ACTIVE').
@@ -187,9 +188,9 @@ function GamePage() {
       )}
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
-      <header className="z-sticky-chrome shrink-0 border-b border-border bg-background/90 backdrop-blur-sm pt-safe px-4 pb-3">
+      <header className="z-sticky-chrome shrink-0 border-b border-border bg-background/90 backdrop-blur-sm pt-safe px-4 pb-3 font-rubik font-extrabold">
         <div className="flex items-center justify-between gap-3 pt-3">
-          <p className="shrink-0 text-sm font-semibold tracking-tight text-foreground">New Game</p>
+          <p className="shrink-0 text-sm font-bold tracking-tight text-foreground">New Game</p>
           <div className="flex min-w-0 max-w-[min(100%,28rem)] flex-1 justify-end">
             <div className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-full bg-secondary px-2.5 py-0.5 pl-3 text-secondary-foreground shadow-sm sm:gap-2.5 sm:px-3">
               <p className="min-w-0 truncate text-left text-[10px] font-medium uppercase leading-snug tracking-wide text-secondary-foreground/90 sm:text-xs">

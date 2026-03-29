@@ -58,7 +58,7 @@ function CreateGamePage() {
 
       {/* Header */}
       <div className="mb-8 space-y-1">
-        <h1 className="text-2xl font-bold">Start a Game</h1>
+        <h1 className="text-2xl">Start a Game</h1>
         <p className="text-sm text-muted-foreground">
           You'll be the game owner and can invite others with a link.
         </p>

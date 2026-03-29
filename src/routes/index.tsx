@@ -85,7 +85,7 @@ function HomePage() {
           🎯
         </div>
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Project Hunt</h1>
+          <h1 className="text-3xl tracking-tight">Project Hunt</h1>
           <p className="text-sm text-muted-foreground">Race your team to complete goals.</p>
         </div>
       </div>

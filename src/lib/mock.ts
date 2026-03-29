@@ -38,6 +38,15 @@ export const TEAM_COLORS = [
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/** Coerce API enum strings so strict checks like `status === 'LOBBY'` always work. */
+export function normalizeGameStatus(status: unknown): MockGame['status'] {
+  const t = String(status ?? '')
+    .trim()
+    .toUpperCase()
+  if (t === 'LOBBY' || t === 'ACTIVE' || t === 'COMPLETE' || t === 'EXPIRED') return t
+  return 'LOBBY'
+}
+
 export interface MockGame {
   id: string
   name: string
@@ -188,7 +197,13 @@ export async function joinGame(
 export async function getGame(
   gameId: string,
 ): Promise<{ game: MockGame; participants: MockParticipant[]; teams: MockTeam[] }> {
-  return api(`/api/games/${gameId}`)
+  const data = await api<{ game: MockGame; participants: MockParticipant[]; teams: MockTeam[] }>(
+    `/api/games/${gameId}`,
+  )
+  return {
+    ...data,
+    game: { ...data.game, status: normalizeGameStatus(data.game.status) },
+  }
 }
 
 /**
@@ -197,7 +212,8 @@ export async function getGame(
  *   returns: { game }
  */
 export async function startGame(gameId: string): Promise<{ game: MockGame }> {
-  return api(`/api/games/${gameId}/start`, { method: 'PATCH' })
+  const data = await api<{ game: MockGame }>(`/api/games/${gameId}/start`, { method: 'PATCH' })
+  return { game: { ...data.game, status: normalizeGameStatus(data.game.status) } }
 }
 
 /**
@@ -210,10 +226,11 @@ export async function updateGameSettings(
   gameId: string,
   payload: { actorId: string; timeLimitMinutes?: number; goalsRequired?: number },
 ): Promise<{ game: MockGame }> {
-  return api(`/api/games/${gameId}`, {
+  const data = await api<{ game: MockGame }>(`/api/games/${gameId}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   })
+  return { game: { ...data.game, status: normalizeGameStatus(data.game.status) } }
 }
 
 // ─── Team API ─────────────────────────────────────────────────────────────────
