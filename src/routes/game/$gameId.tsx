@@ -207,7 +207,7 @@ function GamePage() {
           </div>
         </header>
 
-        <div className="space-y-6 px-4 py-6">
+        <div className="space-y-6 px-4 pt-0 pb-6">
         <GameLobbyOverviewCard
           gameId={gameId}
           game={game}
