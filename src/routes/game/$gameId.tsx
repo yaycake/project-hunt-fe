@@ -25,7 +25,12 @@ import { IconButton } from '@/components/ui/IconButton'
 import { userTileClassName } from '@/components/ui/UserTile'
 import { TeamsView } from '@/features/lobby/TeamsView'
 import { markPermissionsGateShown, isPermissionsGateMarkedShown } from '@/features/lobby/permissionsGateStorage'
+import { StartGameLoading } from '@/features/game/StartGameLoading'
+import { ActiveGameView } from '@/features/game/ActiveGameView'
 import { cn } from '@/lib/utils'
+
+/** UI lifecycle phases within the game route. */
+type GameUiPhase = 'lobby' | 'starting' | 'active'
 export const Route = createFileRoute('/game/$gameId')({
   component: GamePage,
 })
@@ -36,6 +41,9 @@ function GamePage() {
   const currentUser   = getCurrentUser()
 
   const queryClient = useQueryClient()
+
+  // ── Game UI phase ─────────────────────────────────────────────────────────
+  const [uiPhase, setUiPhase] = useState<GameUiPhase>('lobby')
 
   // ── UI state ─────────────────────────────────────────────────────────────
   const [showCreateTeams, setShowCreateTeams] = useState(false)
@@ -126,10 +134,14 @@ function GamePage() {
 
   const { mutate: handleStart, isPending: isStarting } = useMutation({
     mutationFn: () => startGame(gameId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['game', gameId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['game', gameId] })
+      // Transition owner immediately to the loading screen.
+      setUiPhase('starting')
+    },
     // BACKEND DEV: Socket.IO 'game:started' will push all clients to the
-    // active game view. For now, owner navigates immediately; others redirect
-    // on next poll (when game.status === 'ACTIVE').
+    // active game view. For now, owner transitions immediately; others
+    // transition on next poll (when game.status === 'ACTIVE').
   })
 
   const { mutate: handleLeave, isPending: isLeaving } = useMutation({
@@ -148,12 +160,25 @@ function GamePage() {
     },
   })
 
-  // ── Redirect all clients when game goes ACTIVE ────────────────────────────
+  // ── Track whether we have ever seen the game in LOBBY this session ───────
+  // Used to distinguish "game just went ACTIVE" (show loading screen) from
+  // "page was reloaded while game was already ACTIVE" (skip loading screen).
+  const sawLobbyThisSessionRef = useRef(false)
+
+  // ── All clients: transition to loading (or directly active) on ACTIVE ────
+  // - Owner: handleStart.onSuccess sets 'starting' immediately; this effect
+  //   won't fire again because uiPhase will already be 'starting', not 'lobby'.
+  // - Non-owner who was in the lobby: sawLobbyThisSessionRef is true by the
+  //   time the poll returns ACTIVE → show the loading screen.
+  // - Any player who reloads while the game is already ACTIVE: ref is still
+  //   false when ACTIVE is first seen → skip straight to 'active'.
   useEffect(() => {
-    if (data?.game.status === 'ACTIVE') {
-      // TODO: navigate({ to: '/game/$gameId/play', params: { gameId } })
+    if (!data) return
+    if (data.game.status === 'LOBBY') sawLobbyThisSessionRef.current = true
+    if (data.game.status === 'ACTIVE' && uiPhase === 'lobby') {
+      setUiPhase(sawLobbyThisSessionRef.current ? 'starting' : 'active')
     }
-  }, [data?.game.status, gameId])
+  }, [data?.game.status, uiPhase])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -167,6 +192,26 @@ function GamePage() {
           markPermissionsGateShown()
           setShowPermissionsGate(false)
         }}
+      />
+    )
+  }
+
+  // ── Game start loading screen ─────────────────────────────────────────────
+  if (uiPhase === 'starting') {
+    return (
+      <StartGameLoading
+        onComplete={() => setUiPhase('active')}
+      />
+    )
+  }
+
+  // ── Active game view ──────────────────────────────────────────────────────
+  if (uiPhase === 'active') {
+    return (
+      <ActiveGameView
+        gameName={data.game.name}
+        teams={data.teams}
+        timeLimitMinutes={data.game.timeLimitMinutes > 0 ? data.game.timeLimitMinutes : undefined}
       />
     )
   }
@@ -193,7 +238,7 @@ function GamePage() {
 
       {/* ── Scrollable content (header scrolls with page) ───────────────── */}
       <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain scroll-momentum">
-        <header className="px-4 pt-safe pb-3 font-rubik font-extrabold">
+        <header className="px-5 pt-safe pb-3 font-rubik font-extrabold">
           <div className="flex items-center justify-between gap-3 pt-3">
             <h1
               className="m-0 max-w-[min(100%,20rem)] shrink-0 text-xl font-extrabold leading-tight tracking-tight text-foreground sm:text-2xl [background-image:none] [background-clip:unset] [-webkit-background-clip:unset] [-webkit-text-fill-color:hsl(var(--foreground))] filter-none"
