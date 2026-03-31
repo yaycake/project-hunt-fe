@@ -89,6 +89,41 @@ export function TeamsView({
   const { mutate: doReassign } = useMutation({
     mutationFn: ({ participantId, teamId }: { participantId: string; teamId: string }) =>
       switchTeam(gameId, participantId, teamId),
+
+    // ── Optimistic update — move the participant instantly in the cache ───────
+    // The UI reflects the drop immediately; the API call settles in background.
+    onMutate: async ({ participantId, teamId }) => {
+      // Prevent any in-flight refetch from clobbering the optimistic data
+      await queryClient.cancelQueries({ queryKey: ['game', gameId] })
+
+      // Snapshot current data so we can roll back on error
+      const previous = queryClient.getQueryData(['game', gameId])
+
+      // Rewrite the participants list immediately
+      queryClient.setQueryData(
+        ['game', gameId],
+        (old: { participants: MockParticipant[] } | undefined) => {
+          if (!old) return old
+          return {
+            ...old,
+            participants: old.participants.map(p =>
+              p.id === participantId ? { ...p, teamId } : p,
+            ),
+          }
+        },
+      )
+
+      return { previous }
+    },
+
+    // ── Roll back if the API rejects ──────────────────────────────────────────
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['game', gameId], context.previous)
+      }
+    },
+
+    // ── Confirm with server truth and trigger view transition ─────────────────
     onSuccess: (_data, { participantId }) => {
       if (participantId === currentUser.id) onSelfSwitch()
       void invalidateGameQueriesWithViewTransition(queryClient, gameId)
