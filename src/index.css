@@ -510,4 +510,20 @@
   .z-drag-ghost {
     z-index: 125;
   }
+
+  /*
+    Active game view layers (above all lobby UI):
+    200  Start-game loading splash (full-screen, above everything)
+    49   Goals sheet tap-outside dismiss overlay (above map, under sheet)
+    50   Goals action sheet panel + floating goals FAB
+  */
+  .z-game-loading {
+    z-index: 200;
+  }
+  .z-game-sheet-scrim {
+    z-index: 49;
+  }
+  .z-game-sheet {
+    z-index: 50;
+  }
 }
